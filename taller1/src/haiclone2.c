@@ -16,6 +16,7 @@ void yava(int i){
 }
 
 void sup(){
+	sleep(1);
 	printf("sup!\n");
 }
 
