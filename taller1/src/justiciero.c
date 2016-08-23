@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
 			if (wait(&status) < 0) { perror("waitpid"); break; }
 
-			//SYSKILL = 129  (62 ??)
+			//NUMERO DE SYSCALL: KILL = 62
 			if(62 == ptrace(PTRACE_PEEKUSER, child, 4*ORIG_RAX, NULL)){
 				ptrace(PTRACE_KILL, child, NULL, NULL);
 				break;
