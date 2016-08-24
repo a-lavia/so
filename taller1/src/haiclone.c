@@ -1,3 +1,5 @@
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -54,6 +56,7 @@ int main(int argc, char* argv[]) {
 	} else {
 		/* Solo se ejecuta en el padre */
 		while(1) {
+			printf("aaaa");
 			if (wait(&status) < 0) { perror("waitpid"); break; }
 			if (WIFEXITED(status)) break; /* Proceso terminado */
 		}

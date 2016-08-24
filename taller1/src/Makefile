@@ -1,9 +1,9 @@
-CFLAGS= -Wall -O0 -g -ggdb -m32
+CFLAGS= -Wall -O0 -g -ggdb
 NASMFLAGS= -g -ggdb
-LDFLAGS=-static -m32 -L'/usr/lib32'
+LDFLAGS=-static
 CC=gcc
 
-BINS=launch
+BINS=launch haiclone
 
 OBJS=$(BINS:=.o)
 
@@ -11,6 +11,7 @@ all: $(BINS)
 
 # Dependencias
 launch.o: launch.c
+haiclone.o: haiclone.c
 
 clean:
 	rm -rf $(OBJS) $(BINS)
