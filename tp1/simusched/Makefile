@@ -20,6 +20,14 @@ simu.o: simu.cpp simu.h basetask.h basesched.h
 simusched.o: simusched.cpp basetask.h basesched.h tasks.h
 tasks.o: tasks.cpp tasks.h basetask.h
 
+ejercicio1:
+	./simusched ej1lote.tsk 1 3 1 SchedFCFS >ej1.txt; cat ej1.txt | python graphsched.py > ej1.png
+
+ejercicio2:
+	./simusched ej2lote.tsk 1 2 1 SchedFCFS >ej2_1.txt; cat ej2_1.txt | python graphsched.py > ej2_1.png
+	./simusched ej2lote.tsk 2 2 1 SchedFCFS >ej2_2.txt; cat ej2_2.txt | python graphsched.py > ej2_2.png
+	./simusched ej2lote.tsk 4 2 1 SchedFCFS >ej2_4.txt; cat ej2_4.txt | python graphsched.py > ej2_4.png
+
 clean:
 	rm -f $(OBJS) $(MAIN)
 

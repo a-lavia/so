@@ -18,14 +18,14 @@ void TaskAlterno(int pid, vector<int> params) { // params: ms_pid, ms_io, ms_pid
 	}
 }
 
-void TaskConsola(int pid, vector<int> params) { // params: n
-	// uso_CPU(pid, params[0] - 1); // Uso el CPU n milisegundos.
+void TaskConsola(int pid, vector<int> params) {
+	// params: n bmin bmax
 	int random_num;
 
 	for(int i = 0; i < params[0]; i++){
 		random_num = params[1] + rand() % (params[2]-params[1] + 1);
 		uso_IO(pid, random_num);
-		uso_CPU(pid, 1000);
+		uso_CPU(pid, 1);
 	}
 
 	return;
@@ -41,4 +41,5 @@ void tasks_init(void) {
 	register_task(TaskCPU, 1);
 	register_task(TaskIO, 2);
 	register_task(TaskAlterno, -1);
+	register_task(TaskConsola, 3);
 }
