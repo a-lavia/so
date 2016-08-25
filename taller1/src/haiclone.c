@@ -7,60 +7,64 @@
 #include <errno.h>
 
 pid_t child;
-int count;
+int count = 0;
 
 void SIGURG_HANDLER() {
-	printf("ya va! \n");
+	write(1, "ya va!\n",7);
 	count++;
+	int i = 0;
+	while(i < 10){
+		i++;
+	}
 }
 
 void SIGINT_HANDLER() {
-	if(count < 5) {
-		printf("sup! \n");
-		kill(child, SIGURG);
-		sleep(1);
-		count++;
-	}
+	write(1, "sup!\n", 5);
+	count++;
 }
 
 int main(int argc, char* argv[]) {
 	int status;
-	pid_t parent = getpid();
-
-	count = 0;
+	
 
 	if (argc <= 1) {
 		fprintf(stderr, "Uso: %s commando [argumentos ...]\n", argv[0]);
 		exit(1);
 	}
 
-  signal(SIGINT, &SIGINT_HANDLER);
 
 	/* Fork en dos procesos */
 	child = fork();
 	if (child == -1) { perror("ERROR fork"); return 1; }
 	if (child == 0) {
+		/* Solo se ejecuta en el hijo */
+		signal(SIGURG, &SIGURG_HANDLER);
+		
+		while(count < 5){
+		}
 
-    signal(SIGURG, &SIGURG_HANDLER);
+		pid_t parent = getppid();
+		kill(parent,SIGINT);
 
-    while(1) {
-			if(count == 5) {
-				/* Solo se ejecuta en el hijo */
-				execvp(argv[1], argv+1);
-				/* Si vuelve de exec() hubo un error */
-				perror("ERROR child exec(...)"); exit(1);
-			} else {
-				kill(parent, SIGINT);
-			}
-    }
+		execvp(argv[1], argv+1);
+		/* Si vuelve de exec() hubo un error */
+		perror("ERROR child exec(...)"); exit(1);
+
 	} else {
 		/* Solo se ejecuta en el padre */
+
+		signal(SIGINT, &SIGINT_HANDLER);
+
+		while(count < 1){
+			sleep(1);
+			write(1, "sup!\n", 5);
+			kill(child, SIGURG);
+		}
+
 		while(1) {
-			printf("aaaa");
 			if (wait(&status) < 0) { perror("waitpid"); break; }
 			if (WIFEXITED(status)) break; /* Proceso terminado */
 		}
-
 	}
 	return 0;
 }

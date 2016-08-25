@@ -27,9 +27,7 @@ void TaskConsola(int pid, vector<int> params) {
 		uso_IO(pid, random_num);
 		uso_CPU(pid, 1);
 	}
-
 	return;
-
 }
 
 

@@ -25,37 +25,36 @@ int main(int argc, char* argv[]) {
 		/* Solo se ejecuta en el hijo */
 
 		ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-		// if (ptrace(PTRACE_TRACEME, 0, NULL, NULL)){
-		// 	perror("ERROR child ptrace(PTRACE_TRACEME, ...)");
-		// 	exit(1);
-		// }
 
 		execvp(argv[1], argv+1);
 		/* Si vuelve de exec() hubo un error */
 		perror("ERROR child exec(...)"); exit(1);
-	
+
 	} else {
 		/* Solo se ejecuta en el padre */
+		int eskill = 0;
 
 		ptrace(PTRACE_ATTACH, child, NULL, NULL);
 
 		while(1) {
 
 			if (wait(&status) < 0) { perror("waitpid"); break; }
+			if (WIFEXITED(status)) break; /* Proceso terminado */
 
 			//NUMERO DE SYSCALL: KILL = 62
-			if(62 == ptrace(PTRACE_PEEKUSER, child, 4*ORIG_RAX, NULL)){
+			if(62 == ptrace(PTRACE_PEEKUSER, child, 8*ORIG_RAX, NULL)){
 				ptrace(PTRACE_KILL, child, NULL, NULL);
+				eskill = 1;
 				break;
 			}
 
-			if (WIFEXITED(status)) break; /* Proceso terminado */
 			ptrace(PTRACE_SYSCALL, child, NULL, NULL); /* Continua */
-
 		}
 
+		if(eskill == 1)
+			printf("Se ha hecho justicia!\n");
+
 		ptrace(PTRACE_DETACH, child, NULL, NULL); /* Liberamos al hijo */
-		printf("Se ha hecho justicia!\n");
 	}
 
 	return 0;
