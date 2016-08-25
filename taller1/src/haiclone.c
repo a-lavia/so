@@ -8,24 +8,19 @@
 
 pid_t child;
 int count = 0;
+int status;
 
 void SIGURG_HANDLER() {
 	write(1, "ya va!\n",7);
 	count++;
-	int i = 0;
-	while(i < 10){
-		i++;
-	}
 }
 
 void SIGINT_HANDLER() {
-	write(1, "sup!\n", 5);
-	count++;
+	if (wait(&status) < 0) { perror("waitpid");}
+	exit(0);
 }
 
 int main(int argc, char* argv[]) {
-	int status;
-	
 
 	if (argc <= 1) {
 		fprintf(stderr, "Uso: %s commando [argumentos ...]\n", argv[0]);
@@ -55,15 +50,10 @@ int main(int argc, char* argv[]) {
 
 		signal(SIGINT, &SIGINT_HANDLER);
 
-		while(count < 1){
+		while(1){
 			sleep(1);
 			write(1, "sup!\n", 5);
 			kill(child, SIGURG);
-		}
-
-		while(1) {
-			if (wait(&status) < 0) { perror("waitpid"); break; }
-			if (WIFEXITED(status)) break; /* Proceso terminado */
 		}
 	}
 	return 0;
