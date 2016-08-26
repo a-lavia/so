@@ -30,6 +30,23 @@ void TaskConsola(int pid, vector<int> params) {
 	return;
 }
 
+void TaskBatch(int pid, vector<int> params) {
+	// params: total_cpu cant_bloqueos
+	
+	//PREGUNTAR!!!!!!!!! ES ASI EL ENUNCIADO??????
+
+	int cpu_restante = params[0] - params[1] - 1;
+	int random_num;
+	while(params[1] > 0){
+		random_num = rand() % (cpu_restante + 1);
+		if(random_num > 0) uso_CPU(pid, random_num);
+		cpu_restante = cpu_restante - random_num;
+		uso_IO(pid, 2);
+		params[1]--;
+	}
+
+	return;
+}
 
 
 void tasks_init(void) {
@@ -40,4 +57,5 @@ void tasks_init(void) {
 	register_task(TaskIO, 2);
 	register_task(TaskAlterno, -1);
 	register_task(TaskConsola, 3);
+	register_task(TaskBatch, 2);
 }

@@ -28,6 +28,9 @@ ejercicio2:
 	./simusched ej2lote.tsk 2 2 1 SchedFCFS >ej2_2.txt; cat ej2_2.txt | python graphsched.py > ej2_2.png
 	./simusched ej2lote.tsk 4 2 1 SchedFCFS >ej2_4.txt; cat ej2_4.txt | python graphsched.py > ej2_4.png
 
+ejercicio3:
+	./simusched ej3lote.tsk 1 3 1 SchedFCFS >ej3.txt; cat ej3.txt | python graphsched.py > ej3.png
+
 clean:
 	rm -f $(OBJS) $(MAIN)
 
