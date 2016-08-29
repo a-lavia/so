@@ -1,0 +1,22 @@
+\section{Ejercicio 9}
+
+\subsection{Enunciado}
+Completar la implementación del scheduler \textit{Multilevel Feedback Queue} implementando los métodos de la clase \textbf{SchedMFQ} en los archivos \textbf{sched\_mfq.cpp} y \textbf{sched\_mfq.h}.
+La implementación debe utilizar \textit{n} colas con \textit{Round-Robin} en cada una con los parámetros que se detallan a continuación.
+
+\begin{itemize}
+\item Las n colas se numeran de 0 a $n-1$ siendo 0 la de mayor prioridad.
+
+\item El constructor recibe como parámetro $n$ números $q_i$ indicando el \textit{quantum} de la cola $i$.
+
+\item Al iniciar una tarea comienza al final de la cola de mayor prioridad.
+
+\item Siempre se ejecuta la primer tarea de la cola no vacía de mayor prioridad. Si esta tarea consume todo su \textit{quantum} sin bloquearse entonces pasa al final de la cola inmediatamente de inferior prioridad (si hay). Si esta tarea se bloquea antes de agotar su \textit{quantum}, entonces (cuando se desbloquee)
+
+\item Si todas las colas están vacías se ejecuta \textbf{IDLE TASK}.
+
+\end{itemize}
+
+Realice pruebas y muestre su ejecución.
+
+\subsection{Resolución}

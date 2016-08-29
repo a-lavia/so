@@ -20,31 +20,62 @@ void TaskAlterno(int pid, vector<int> params) { // params: ms_pid, ms_io, ms_pid
 
 void TaskConsola(int pid, vector<int> params) {
 	// params: n bmin bmax
+	
+	// Entero que va a tomar el valor aleatorio entre bmin y bmax.
 	int random_num;
+	
+	// Pasamos los valores de params a variables mas declarativas
+	int n = params[0];
+	int bmin = params[1];
+	int bmax = params[2];
 
-	for(int i = 0; i < params[0]; i++){
-		random_num = params[1] + rand() % (params[2]-params[1] + 1);
+	// Iteramos n veces
+	for(int i = 0; i < n; i++){
+		
+		// Generamos una duración al azar para la llamada bloqueante.
+		random_num = bmin + rand() % (bmax - bmin + 1);
+
+		// Se realiza la llamada bloqueante con la duración al azar.
 		uso_IO(pid, random_num);
+
+		// Ejecutamos 1 clock
 		uso_CPU(pid, 1);
 	}
 	return;
 }
 
+//PREGUNTAR!!!!!!!!! ES ASI EL ENUNCIADO??????
 void TaskBatch(int pid, vector<int> params) {
 	// params: total_cpu cant_bloqueos
 	
-	//PREGUNTAR!!!!!!!!! ES ASI EL ENUNCIADO??????
-
-	int cpu_restante = params[0] - params[1] - 1;
+	// Entero que utlizamos para generar el valor pseudoaleatorio
 	int random_num;
-	while(params[1] > 0){
-		random_num = rand() % (cpu_restante + 1);
-		if(random_num > 0) uso_CPU(pid, random_num);
-		cpu_restante = cpu_restante - random_num;
-		uso_IO(pid, 2);
-		params[1]--;
-	}
+	
+	// Pasamos los valores de params a variables mas declarativas
+	int total_cpu = params[0];
+	int cant_bloqueos = params[1];
+	
+	// El total del cpu que se utilice va a ser total_cpu - cant_bloqueos (ya que por cada uno de ellos
+	// se utiliza 1 ciclo del cpu) y - 1 ya que return utiliza un ciclo de reloj.
+	int cpu_restante = total_cpu - cant_bloqueos - 1;
 
+	// Ciclo mientras todavia haya bloqueos para realizar
+	while(cant_bloqueos > 0){
+		// Genero un numero aleatorio entre 0 y cpu_restante
+		random_num = rand() % (cpu_restante + 1);
+		
+		// Si el numero aleatorio es mayor que cero, uso el CPU
+		// random_num ciclos.
+		if(random_num > 0) uso_CPU(pid, random_num);
+		
+		// Descuento random_num ciclos a cpu_restante
+		cpu_restante = cpu_restante - random_num;
+		
+		// Se realiza la llamada bloqueante
+		uso_IO(pid, 2);
+		
+		cant_bloqueos--;
+	}
 	return;
 }
 

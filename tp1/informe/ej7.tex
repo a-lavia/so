@@ -1,0 +1,14 @@
+\section{Ejercicio 7}
+
+\subsection{Enunciado}
+En base a lo anterior, defina dos nuevos algoritmos de scheduling. Ambos del tipo \textit{shortest job first}. Para ambos puede considerar que solamente correran tareas de tipo TaskCPU.
+
+\begin{enumerate}[a)]
+\item Uno no reentrante. Tomará como parámetros la cantidad de procesadores y el tiempo total de ejecución de cada tarea en el lote. Ejecutará la tarea que menos tiempo de cpu necesite. Al terminar de ejecutarla, volverá a elegir la de menor tiempo de ejecución.
+Será llamado \textbf{SJF}.
+
+\item Uno reentrante. Tomará como parámetros la cantidad de procesadores, los \textbf{Quantums} de cada uno de ellos y el tiempo total de ejecución de cada tarea en el lote. Un proceso correrá en ese procesador durante ese quantum. Al terminar dicho tiempo, ejecutará la tarea a la que menos tiempo le quede de ejecución (podría seguir ejecutando la tarea actual). Existe una única cola de procesos para todos los procesadores. Lo llamaremos
+\textbf{RSJF}.
+\end{enumerate}
+
+\subsection{Resolución}

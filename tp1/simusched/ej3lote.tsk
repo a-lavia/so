@@ -1,23 +1,15 @@
-TaskBatch 20 1
+TaskBatch 23 1
 @5:
-TaskBatch 40 2
+TaskBatch 42 2
 @6:
-TaskBatch 60 3
+TaskBatch 58 3
 @8:
-TaskBatch 80 4
+TaskBatch 77 4
 
-TaskBatch 20 1
-@5:
-TaskBatch 40 2
-@6:
-TaskBatch 60 3
-@8:
-TaskBatch 80 4
-
-TaskBatch 20 1
-@5:
-TaskBatch 40 2
-@6:
-TaskBatch 60 3
-@8:
-TaskBatch 80 4
+TaskBatch 33 12
+@2:
+TaskBatch 50 5
+@3:
+TaskBatch 70 9
+@2:
+TaskBatch 27 3
