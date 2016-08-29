@@ -23,10 +23,28 @@ Ejecutar y graficar la simulación usando el algoritmo \textbf{FCFS} para 1 y 2 
 
 \subsection{Resolución}
 
+Para este ejercicio se pedía ejecutar y graficar usando el algoritmo \textbf{FCFS} para 1, 2 y 4 núcleos, con un cambio de contexto de 2 ciclos, para la tarea (\emph{ej2lote}): 
+
+\begin{center}
+	\begin{tabular}{|l|}
+		\hline
+		TaskCPU 10			\\
+		@5:					\\
+		TaskConsola 5 1 4	\\
+		@6:					\\
+		TaskConsola 5 1 2	\\
+		@8:					\\
+		TaskCPU 10			\\
+		\hline
+	\end{tabular}
+\end{center}
+
+Los graficos en cuestión son:
+
 \begin{figure}[!h]
 	\begin{center}
 		\includegraphics[width=500px]{imagenes/ej2_1.png}
-		\caption{\small{\textbf{Grafico generado con el lote usando el algoritmo FCFS para 1 núcleo con un cambio de contexto de 2 ciclos.}}}
+		\caption{Ejecución del lote \emph{ej2lote} con 1 núcleo.}
 		\label{fig:grafico_ej2_1}
 	\end{center}
 \end{figure}
@@ -34,7 +52,7 @@ Ejecutar y graficar la simulación usando el algoritmo \textbf{FCFS} para 1 y 2 
 \begin{figure}[!h]
 	\begin{center}
 		\includegraphics[width=500px]{imagenes/ej2_2.png}
-		\caption{\small{\textbf{Grafico generado con el lote usando el algoritmo FCFS para 2 núcleos con un cambio de contexto de 2 ciclos.}}}
+		\caption{Ejecución del lote \emph{ej2lote} con 2 núcleos.}
 		\label{fig:grafico_ej2_2}
 	\end{center}
 \end{figure}
@@ -42,7 +60,26 @@ Ejecutar y graficar la simulación usando el algoritmo \textbf{FCFS} para 1 y 2 
 \begin{figure}[!h]
 	\begin{center}
 		\includegraphics[width=500px]{imagenes/ej2_4.png}
-		\caption{\small{\textbf{Grafico generado con el lote usando el algoritmo FCFS para 4 núcleos con un cambio de contexto de 2 ciclos.}}}
+		\caption{Ejecución del lote \emph{ej2lote} con 4 núcleos.}
 		\label{fig:grafico_ej2_4}
 	\end{center}
 \end{figure}
+
+\newpage
+Realizamos el calculo de la \textit{latencia}:
+
+\begin{center}
+	\begin{tabular}{|c|c|c|c|c|}
+		\hline
+		\multicolumn{5}{|c|}{\textbf{Latencia}} \\
+		\hline
+		\textbf{Cant. Nucleos} & \textbf{TaskCPU @0} & \textbf{TaskConsola @5} & \textbf{TaskConsola @6} & \textbf{TaskCPU @8} \\
+		\hline
+		1 & 2 & 9 & 36 & 55 \\
+		2 & b & c & d & e \\
+		4 & 2 & 2 & 2 & 2 \\
+		\hline
+	\end{tabular}
+\end{center}
+
+Vemos el \textit{throughput}:
