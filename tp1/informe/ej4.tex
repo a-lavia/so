@@ -1,7 +1,67 @@
 \section{Ejercicio 4}
 
-\subsection{Enunciado}
-Completar la implementación del scheduler Round-Robin implementando los métodos de la clase \textbf{SchedRR} en los archivos \textbf{sched\_rr.cpp} y \textbf{sched\_rr.h}. La implementación recibe como primer parámetro la cantidad de núcleos y a continuación los valores de sus respectivos quantums. Debe utilizar una única cola global, permitiendo así la migración de procesos entre núcleos.
+Para este ejercicio se pedía que completemos la implementación del scheduler Round-Robin implementando los métodos de la clase \textbf{SchedRR}. La consigna dice que esta implementación recibe como parametros la cantidad de núcleos y los valores de sus respectivos \textit{quantums} y que debe utilizar una única cola global.
+~
+Como el constructor recibe como parametros la cantidad de núcleos y los valores de sus respectivos \textit{quantums}, cargamos dos vectores del tamaño de la cantidad de cores con cada uno de los \textit{quantums} de cada uno.
 
+\begin{itemize}
+	\item \textbf{quantum\_por\_core} = Agrego los \textit{quantums} de todos los cores
+	\item \textbf{quantum\_proceso} = Lo creo copiando al vector quantum\_por\_core
+\end{itemize}
 
-\subsection{Resolución}
+Con esto puedo saber, utilizando al core como índice, cual es el \textit{quantum} total del core y cuanto de ese fue utilizado por el proceso que está ejecutandose en ese core.
+
+~
+
+Luego, poseémos una única cola llamada \textbf{cola\_procesos} en donde vamos encolando los que van llegando y los que están listos luego de estar bloqueados.
+
+~
+
+Las funciones \textbf{void load(int pid)} y \textbf{void unblock(int pid)} encolan al proceso que es pasado por parametro.
+
+~
+
+La función \textbf{int tick(int cpu, const enum Motivo m)} tiene un comportamiento mas particular que pasamos a detallar en el siguiente pseudocódigo:
+
+~
+
+\begin{algorithmic}
+\Function{int tick}{int cpu, const enum Motivo m}
+
+	\If {\emph{Si el motivo es que el proceso terminó}}
+	\newline
+		
+		\If {\emph{Si hay encoladas tareas}}
+
+			\State Desencolo un proceso listo de \textbf{cola\_procesos} y lo devuelvo.
+
+		\Else
+			\State Devuelvo IDLE\_TASK
+		\EndIf
+
+	\State Actualizo el quantum del core aunque no haya tareas.
+	\newline
+	
+	\ElsIf {\emph{Si el motivo es que el proceso se bloqueó}}
+		\State Desencolo un proceso listo de \textbf{cola\_procesos} y lo devuelvo.
+	\newline
+	\Else
+		\If{\emph{Si el proceso no es IDLE\_TASK}}
+			\State Resto en uno su quantum
+			\If{\emph{Si el quantum es cero}}
+				\State Llamo a la función \textbf{current\_pid} para saber el pid de la tarea actual.
+				\State La encolo en \textbf{cola\_procesos}
+				\State Desencolo el proximo proceso de \textbf{cola\_proceso} y lo devuelvo.
+			\Else
+				\State Como no terminó su quantum llamo a \textbf{current\_pid} y devuelvo el proceso actual.
+			\EndIf
+		\Else
+			
+			\If{\emph{Si \textbf{cola\_procesos} tiene algún proceso}}
+				\State Lo desencolo y lo devuelvo.
+			\EndIf
+
+		\EndIf
+	\EndIf
+\EndFunction	
+\end{algorithmic}

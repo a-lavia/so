@@ -11,9 +11,12 @@
 \usepackage[colorlinks=true, linkcolor=blue]{hyperref}
 
 \usepackage{listings}
-\lstset{language=C++}
+\lstset{language=C++,
+		basicstyle=\ttfamily}
 
 \usepackage[Algoritmo]{algorithm}
+\usepackage{algpseudocode}
+\algrenewcommand\textproc{}% Used to be \textsc Para que el nombre de la función no sea en mayusculas
 
 \usepackage{tabularx} % tablas copadas
 % \usepackage{graphicx}

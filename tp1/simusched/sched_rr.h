@@ -18,6 +18,9 @@ class SchedRR : public SchedBase {
 		virtual int tick(int cpu, const enum Motivo m);	
 	private:
 /* llenar */
+		queue<int> cola_procesos;
+		vector<int> quantum_proceso;
+		vector<int> quantum_por_core;
 };
 
 #endif

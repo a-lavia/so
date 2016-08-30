@@ -1,28 +1,5 @@
 \section{Ejercicio 2}
 
-\subsection{Enunciado}
-
-Ejecutar y graficar la simulación usando el algoritmo \textbf{FCFS} para 1 y 2 y 4 núcleos con un cambio de contexto de 2 ciclos. Calcular la \textit{latencia} de cada tarea en los tres gráficos y el \textit{throughput}.
-
-\begin{center}
-	\begin{tabular}{|l|}
-		\hline
-							\\
-		TaskCPU 10			\\
-		@5:					\\
-		TaskConsola 5 1 4	\\
-		@6:					\\
-		TaskConsola 5 1 2	\\
-		@8:					\\
-		TaskCPU 10			\\
-							\\
-		\hline
-	\end{tabular}
-\end{center}
-
-
-\subsection{Resolución}
-
 Para este ejercicio se pedía ejecutar y graficar usando el algoritmo \textbf{FCFS} para 1, 2 y 4 núcleos, con un cambio de contexto de 2 ciclos, para la tarea (\emph{ej2lote}): 
 
 \begin{center}
@@ -76,7 +53,7 @@ Realizamos el calculo de la \textit{latencia}:
 		\textbf{Cant. Nucleos} & \textbf{TaskCPU @0} & \textbf{TaskConsola @5} & \textbf{TaskConsola @6} & \textbf{TaskCPU @8} \\
 		\hline
 		1 & 2 & 9 & 36 & 55 \\
-		2 & b & c & d & e \\
+		2 & 2 & 2 & 8 & 26 \\
 		4 & 2 & 2 & 2 & 2 \\
 		\hline
 	\end{tabular}
@@ -85,3 +62,4 @@ Realizamos el calculo de la \textit{latencia}:
 Vemos el \textit{throughput} (cantidad de procesos terminados por unidad de tiempo)
 
 *insertar el grafiquito aca*
+
