@@ -21,15 +21,21 @@ simusched.o: simusched.cpp basetask.h basesched.h tasks.h
 tasks.o: tasks.cpp tasks.h basetask.h
 
 ejercicio1:
-	./simusched ej1lote.tsk 1 1 1 SchedFCFS >ej1.txt ; cat ej1.txt | python graphsched.py > graficos_ej1/ej1.png ; rm ej1.txt
+	./simusched ej1lote.tsk 1 1 1 SchedFCFS  | python graphsched.py > ../informe/imagenes/ej1.png
 
 ejercicio2:
-	./simusched ej2lote.tsk 1 2 1 SchedFCFS >ej2_1.txt ; cat ej2_1.txt | python graphsched.py > graficos_ej2/ej2_1.png ; rm ej2_1.txt
-	./simusched ej2lote.tsk 2 2 1 SchedFCFS >ej2_2.txt ; cat ej2_2.txt | python graphsched.py > graficos_ej2/ej2_2.png ; rm ej2_2.txt
-	./simusched ej2lote.tsk 4 2 1 SchedFCFS >ej2_4.txt ; cat ej2_4.txt | python graphsched.py > graficos_ej2/ej2_4.png ; rm ej2_4.txt
+	./simusched ej2lote.tsk 1 2 1 SchedFCFS | python graphsched.py > ../informe/imagenes/ej2_1.png
+	./simusched ej2lote.tsk 2 2 1 SchedFCFS | python graphsched.py > ../informe/imagenes/ej2_2.png 
+	./simusched ej2lote.tsk 4 2 1 SchedFCFS | python graphsched.py > ../informe/imagenes/ej2_4.png 
 
 ejercicio3:
-	./simusched ej3lote.tsk 1 3 1 SchedFCFS >ej3.txt ; cat ej3.txt | python graphsched.py > graficos_ej3/ej3.png ; rm ej3.txt
+	./simusched ej3lote.tsk 1 3 1 SchedFCFS | python graphsched.py > ../informe/imagenes/ej3.png
+
+ejercicio5:
+	
+	./simusched ej2lote.tsk 1 2 1 SchedRR 2 | python graphsched.py > ../informe/imagenes/ej5_2.png
+	./simusched ej2lote.tsk 1 2 1 SchedRR 5 | python graphsched.py > ../informe/imagenes/ej5_5.png
+	./simusched ej2lote.tsk 1 2 1 SchedRR 10 | python graphsched.py > ../informe/imagenes/ej5_10.png
 
 clean:
 	rm -f $(OBJS) $(MAIN)
