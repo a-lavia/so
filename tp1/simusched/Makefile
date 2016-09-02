@@ -32,7 +32,6 @@ ejercicio3:
 	./simusched ej3lote.tsk 1 3 1 SchedFCFS | python graphsched.py > ../informe/imagenes/ej3.png
 
 ejercicio5:
-	
 	./simusched ej2lote.tsk 1 2 1 SchedRR 2 | python graphsched.py > ../informe/imagenes/ej5_2.png
 	./simusched ej2lote.tsk 1 2 1 SchedRR 5 | python graphsched.py > ../informe/imagenes/ej5_5.png
 	./simusched ej2lote.tsk 1 2 1 SchedRR 10 | python graphsched.py > ../informe/imagenes/ej5_10.png

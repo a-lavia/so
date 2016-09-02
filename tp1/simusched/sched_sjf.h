@@ -8,6 +8,20 @@
 
 using namespace std;
 
+struct Proceso{
+	int pid;
+	int tiempo;
+
+	Proceso(int _pid, int _tiempo){
+		this->pid = _pid;
+		this->tiempo = _tiempo;
+	}
+
+	bool operator <(const Proceso& p2) const {
+		return this->tiempo < p2.tiempo;
+	}
+};
+
 class SchedSJF : public SchedBase {
 	public:
 		SchedSJF(std::vector<int> argn);
@@ -17,7 +31,9 @@ class SchedSJF : public SchedBase {
 		virtual void unblock(int pid);
 		virtual int tick(int cpu, const enum Motivo m);	
 	private:
-/* llenar */
+
+	queue<int> tiempos_procesos;
+	priority_queue<Proceso> procesos;
 };
 
 #endif
