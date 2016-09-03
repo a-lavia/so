@@ -17,8 +17,8 @@ struct Proceso{
 		this->tiempo = _tiempo;
 	}
 
-	bool operator <(const Proceso& p2) const {
-		return this->tiempo < p2.tiempo;
+	bool operator >(const Proceso& p2) const {
+		return this->tiempo > p2.tiempo;
 	}
 };
 
@@ -33,7 +33,7 @@ class SchedSJF : public SchedBase {
 	private:
 
 	queue<int> tiempos_procesos;
-	priority_queue<Proceso> procesos;
+	priority_queue<Proceso, vector<Proceso>, greater<Proceso> > cola_procesos;
 };
 
 #endif
