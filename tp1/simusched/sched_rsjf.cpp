@@ -45,6 +45,7 @@ int SchedRSJF::tick(int core, const enum Motivo m) {
 			cola_procesos.pop();
 			prox_proc = proceso_a_ejec.pid;
 			proceso_en_core[core] = proceso_a_ejec;
+			quantum_actual[core] = quantum_por_core[core];
 		}
 	
 	} else {
@@ -63,9 +64,12 @@ int SchedRSJF::tick(int core, const enum Motivo m) {
 			}
 		
 		} else if (m == TICK){
+			// Descuento el tiempo al proceso y el quantum del core
 			proceso_en_core[core].tiempo--;
 			quantum_actual[core]--;
 
+			// Si el quantum del core termino y no esta vacia, desencolo el proximo, guardo el actual,
+			// Actualizo el quantum y devuelvo
 			if(quantum_actual[core] == 0 && !cola_procesos.empty()){
 				ProcesoRSJF proceso_a_ejec = cola_procesos.top();
 				cola_procesos.pop();
@@ -77,12 +81,13 @@ int SchedRSJF::tick(int core, const enum Motivo m) {
 				quantum_actual[core] = quantum_por_core[core];
 
 			} else if(quantum_actual[core] == 0){
+				// Si el quantum terminó y la cola esta vacia, actualizo el quantum y devuelvo el actual.
 				quantum_actual[core] = quantum_por_core[core];
 				prox_proc = current_pid(core);
 			} else {
+				// El quantum no terminó, devuelvo el actual
 				prox_proc = current_pid(core);
 			}
-
 		}
 	}
 
