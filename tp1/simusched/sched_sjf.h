@@ -12,10 +12,7 @@ struct Proceso{
 	int pid;
 	int tiempo;
 
-	Proceso(int _pid, int _tiempo){
-		this->pid = _pid;
-		this->tiempo = _tiempo;
-	}
+	Proceso(int p, int t) : pid(p), tiempo(t) {}
 
 	bool operator >(const Proceso& p2) const {
 		return this->tiempo > p2.tiempo;

@@ -8,14 +8,14 @@
 
 using namespace std;
 
-struct proceso {
+struct ProcesoRSJF {
 	int pid;
 	int tiempo;
 
-	proceso(int p, int t) : pid(p), tiempo(t) {}
+	ProcesoRSJF(int p, int t) : pid(p), tiempo(t) {}
 
-	bool operator <(const proceso& other) const {
-    return this->tiempo < other.tiempo;
+	bool operator >(const ProcesoRSJF& other) const {
+    return this->tiempo > other.tiempo;
 	}
 
 };
@@ -30,12 +30,13 @@ class SchedRSJF : public SchedBase {
 		virtual int tick(int cpu, const enum Motivo m);
 	private:
 
-		vector<int> quantum_core_base;
-		vector<int> quantum_core_actual;
-		vector<proceso*> proceso_en_core;
+		vector<int> quantum_por_core;
+		vector<int> quantum_actual;
 
-		queue<int> tiempo_proceso;
-		priority_queue<proceso> cola_procesos;
+		vector<ProcesoRSJF> proceso_en_core;
+
+		queue<int> tiempos_procesos;
+		priority_queue<ProcesoRSJF, vector<ProcesoRSJF>, greater<ProcesoRSJF> > cola_procesos;
 };
 
 #endif

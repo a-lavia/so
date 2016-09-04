@@ -36,6 +36,10 @@ ejercicio5:
 	./simusched ej2lote.tsk 1 2 1 SchedRR 5 | python graphsched.py > ../informe/imagenes/ej5_5.png
 	./simusched ej2lote.tsk 1 2 1 SchedRR 10 | python graphsched.py > ../informe/imagenes/ej5_10.png
 
+# ejercicio7:
+	# ./simusched ej7lote.tsk 2 2 1 SchedRSJF 2 1 10 9 3 7 | python graphsched.py > ../informe/imagenes/ej7_prueba.png
+
+
 clean:
 	rm -f $(OBJS) $(MAIN)
 
