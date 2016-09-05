@@ -3,7 +3,12 @@
 
 #include <vector>
 #include <queue>
+#include <list>
 #include "basesched.h"
+
+typedef struct {int pid; int ultima_cola;} proceso;
+#define COLAS_VACIAS -1
+
 
 using namespace std;
 class SchedMFQ : public SchedBase {
@@ -16,7 +21,16 @@ class SchedMFQ : public SchedBase {
 		virtual int tick(int n, const enum Motivo m);
 	
 	private:
-/* llenar */
+
+		int hayProcesosEnColas();
+		void eliminarProcesoDeLista(int pid);
+		void agregarProcesoALista(int pid, int cola);
+		int dameCola(int pid);
+
+		vector< queue<int> > colas_de_procesos;
+		vector<int> quantums_por_cola;
+		vector<int> quantum_proceso;
+		list<proceso> procesos_corriendo;
 };
 
 #endif

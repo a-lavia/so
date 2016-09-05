@@ -54,6 +54,9 @@ ejercicio8:
 	./simusched lotes_de_tareas/ej8lote2.tsk 2 2 1 SchedRR 3 3  | python graphsched.py > ../informe/imagenes/ej8_prueba2_rr2.png
 	./simusched lotes_de_tareas/ej8lote2.tsk 2 2 1 SchedRSJF 3 3 5 7 3 11 2  | python graphsched.py > ../informe/imagenes/ej8_prueba2_rsjf2.png
 
+ejercicio9:
+	./simusched lotes_de_tareas/ej8lote1.tsk 1 2 1 SchedMFQ 2 3 4  | python graphsched.py > ../informe/imagenes/ej9.png
+
 
 clean:
 	rm -f $(OBJS) $(MAIN)
