@@ -8,12 +8,10 @@ using namespace std;
 SchedMFQ::SchedMFQ(vector<int> argn) {
 	// MFQ recibe los quantums por parámetro
 
-	for(unsigned int i = 0; i < argn.size(); i++){
+	for(unsigned int i = 1; i < argn.size(); i++){
 		queue<int> nueva_cola;
 		this->colas_de_procesos.push_back(nueva_cola);
-
 		quantums_por_cola.push_back(argn[i]);
-		quantum_proceso.push_back(argn[i]);
 	}
 
 }
@@ -33,101 +31,84 @@ void SchedMFQ::unblock(int pid) {
 		++it;
 
 	// Acutualizo el valor de la ultima cola del proceso y agrego el valor en la cola
-	(*it).ultima_cola = (*it).ultima_cola != this->colas_de_procesos.size() -1 ? (*it).ultima_cola+1 : (*it).ultima_cola;
+	(*it).ultima_cola = (unsigned int) (*it).ultima_cola != this->colas_de_procesos.size() -1 ? (*it).ultima_cola+1 : (*it).ultima_cola;
 	this->colas_de_procesos[(*it).ultima_cola].push(pid);
 
+	eliminarProcesoDeLista(pid);
 }
 
 int SchedMFQ::tick(int core, const enum Motivo m) {
 	int prox_pid = IDLE_TASK;
 
 	if(current_pid(core) == IDLE_TASK){
-		// Si la tarea que esta corriendo es idle y hay alguna en las colas, devuelvo la de mayor prioridad.
+		// Si la tarea es idle, me fijo si hay tareas en alguna cola y tomo
+		// la que tiene mayor prioridad
 
-		// Miro las colas desde la de mayor prioridad.
 		int idx = hayProcesosEnColas();
 
 		if(idx != COLAS_VACIAS){
-			// Hay colas no vacias, devuelvo el de mayor prioridad y actualizo el quantum
+			// hay procesos, tomo el de la cola con indice idx
+			prox_pid = colas_de_procesos[idx].front();
+			colas_de_procesos[idx].pop();
+			agregarProcesoALista(prox_pid, idx, quantums_por_cola[idx]);
+		}
+
+	} else if(m == TICK) {
+		// Actualizo el quantum del proceso que esta corriendo
+		int quantum_proceso_actual = actualizoQuantum(current_pid(core), -1);
+		prox_pid = current_pid(core);
+
+		if(quantum_proceso_actual == 0){
+			// Si el quantum terminó y si hay algun otro proceso encolado, lo devuelvo
+			int idx = hayProcesosEnColas();
+			int proceso_a_desalojar = current_pid(core);
+
+			if(idx != COLAS_VACIAS){
+				// Hay otro proceso, desalojo el que esta, lo agrego en la cola que debe estar
+				// y devuelvo el de mayor prioridad
+
+				prox_pid = colas_de_procesos[idx].front();
+				colas_de_procesos[idx].pop();
+				agregarProcesoALista(prox_pid, idx, quantums_por_cola[idx]);
+
+				int cola_proceso_desalojado = (unsigned int) dameCola(proceso_a_desalojar) == colas_de_procesos.size()-1 ? dameCola(proceso_a_desalojar) : dameCola(proceso_a_desalojar)+1;
+				colas_de_procesos[cola_proceso_desalojado].push(proceso_a_desalojar);
+				eliminarProcesoDeLista(proceso_a_desalojar);
+
+			} else {
+				// No hay otros procesos encolados y su quantum terminó, lo actualizo
+				actualizoQuantum(proceso_a_desalojar, quantums_por_cola[dameCola(proceso_a_desalojar)]);
+			}
+
+		}
+
+	} else if(m == EXIT){
+		// Si termino el proceso de correr, busco si hay alguno que continúe, sino devuelvo idle
+		int idx = hayProcesosEnColas();
+		// Quito el que termino de la lista
+		eliminarProcesoDeLista(current_pid(core));
+
+
+		if(idx != COLAS_VACIAS){
+			// Hay otro proceso encolado, lo devuelvo
 			prox_pid = colas_de_procesos[idx].front();
 			colas_de_procesos[idx].pop();
 
-			agregarProcesoALista(prox_pid, idx);
-
-			quantum_proceso[idx] = quantums_por_cola[idx];
+			agregarProcesoALista(prox_pid, idx, quantums_por_cola[idx]);
 		}
 
-	} else { 
 
-		if(m == TICK){
-		// Descuento el tick del proceso actual
-		int cola_de_proceso_actual = dameCola(current_pid(core));
-		quantum_proceso[cola_de_proceso_actual]--;
+	} else {
+		// m == block
+		// Se bloqueó el proceso actual, si hay otro proceso lo devuelvo, sino devuelvo idle
+		int idx = hayProcesosEnColas();
 
-			if(quantum_proceso[cola_de_proceso_actual] == 0){
-				// Si hay otro proceso lo devuelvo ese
+		if(idx != COLAS_VACIAS){
+			// Hay otro proceso encolado, lo devuelvo
+			prox_pid = colas_de_procesos[idx].front();
+			colas_de_procesos[idx].pop();
 
-				int idx = hayProcesosEnColas();
-
-				if(idx != COLAS_VACIAS){
-					// Hay otro proceso lo devuelvo
-					prox_pid = colas_de_procesos[idx].front();
-					colas_de_procesos[idx].pop();
-
-					// Agrego el proceso que se le termino el quantum en la siguiente
-					// cola, salvo que sea la ultima
-					list<proceso>::iterator it = procesos_corriendo.begin();
-					while(it != procesos_corriendo.end() && (*it).pid != current_pid(core))
-						++it;
-
-					if((*it).ultima_cola == colas_de_procesos.size()-1){
-						colas_de_procesos[(*it).ultima_cola].push((*it).pid);
-					} else {
-						colas_de_procesos[(*it).ultima_cola+1].push((*it).pid);
-					}
-
-					// Lo elimino de la lista
-					eliminarProcesoDeLista(current_pid(core));
-
-					// Agrego el nuevo a la lista
-					agregarProcesoALista(prox_pid, idx);
-					quantum_proceso[idx] = quantums_por_cola[idx];
-
-				}
-
-				// Actualizo quantum, del core actual
-				quantum_proceso[cola_de_proceso_actual] = quantums_por_cola[cola_de_proceso_actual];
-			}
-
-
-		} else if(m == EXIT){
-			// Terminó el proceso, si hay otro proceso encolado lo devuelvo, sino devuelvo idle
-			// Lo quito de la lista de procesos corriendo
-			eliminarProcesoDeLista(current_pid(core));
-
-			int idx = hayProcesosEnColas();
-			if(idx != COLAS_VACIAS){
-				// Hay otro proceso lo devuelvo
-				prox_pid = colas_de_procesos[idx].front();
-				colas_de_procesos[idx].pop();
-
-				agregarProcesoALista(prox_pid, idx);
-
-				quantum_proceso[idx] = quantums_por_cola[idx];
-			}
-
-		} else if(m == BLOCK){
-			// El proceso se bloqueó, paso al siguiente si lo hay
-			int idx = hayProcesosEnColas();
-			if(idx != COLAS_VACIAS){
-				// Hay otro proceso lo devuelvo
-				prox_pid = colas_de_procesos[idx].front();
-				colas_de_procesos[idx].pop();
-
-				agregarProcesoALista(prox_pid, idx);
-
-				quantum_proceso[idx] = quantums_por_cola[idx];
-			}
+			agregarProcesoALista(prox_pid, idx, quantums_por_cola[idx]);
 		}
 	}
 
@@ -137,8 +118,8 @@ int SchedMFQ::tick(int core, const enum Motivo m) {
 int SchedMFQ::hayProcesosEnColas(){
 	int idx = -1;
 
-	for(unsigned int i = 0; i < colas_de_procesos.size(); i++){
-		if(!colas_de_procesos[i].empty()){
+	for(unsigned int i = 0; i < this->colas_de_procesos.size(); i++){
+		if(!(this->colas_de_procesos[i].empty())){
 			idx = i;
 			break;
 		}
@@ -148,26 +129,38 @@ int SchedMFQ::hayProcesosEnColas(){
 }
 
 void SchedMFQ::eliminarProcesoDeLista(int pid){
-	list<proceso>::iterator it = procesos_corriendo.begin();
+	list<proceso>::iterator it = this->procesos_corriendo.begin();
 
-	while(it != procesos_corriendo.end() && (*it).pid != pid)
+	while(it != this->procesos_corriendo.end() && (*it).pid != pid)
 		++it;
 
-	procesos_corriendo.erase(it);
+	this->procesos_corriendo.erase(it);
 }
 
-void SchedMFQ::agregarProcesoALista(int pid, int cola){
+void SchedMFQ::agregarProcesoALista(int pid, int cola, int quantum){
 	proceso nuevo_proceso;
 	nuevo_proceso.pid = pid;
 	nuevo_proceso.ultima_cola = cola;
+	nuevo_proceso.quantum = quantum;
 	this->procesos_corriendo.push_back(nuevo_proceso);
 }
 
-int SchedMFQ::dameCola(int pid){
-	list<proceso>::iterator it = procesos_corriendo.begin();
+int SchedMFQ::actualizoQuantum(int pid, int q){
+	list<proceso>::iterator it = this->procesos_corriendo.begin();
 
-	while(it != procesos_corriendo.end() && (*it).pid != pid)
-		++it;	
+	while(it != this->procesos_corriendo.end() && (*it).pid != pid)
+		++it;
+
+	(*it).quantum += q;
+
+	return (*it).quantum;
+}
+
+int SchedMFQ::dameCola(int pid){
+	list<proceso>::iterator it = this->procesos_corriendo.begin();
+
+	while(it != this->procesos_corriendo.end() && (*it).pid != pid)
+		++it;
 
 	return (*it).ultima_cola;
 }

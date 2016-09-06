@@ -44,7 +44,6 @@ void TaskConsola(int pid, vector<int> params) {
 	return;
 }
 
-//PREGUNTAR!!!!!!!!! ES ASI EL ENUNCIADO??????
 void TaskBatch(int pid, vector<int> params) {
 	// params: total_cpu cant_bloqueos
 	

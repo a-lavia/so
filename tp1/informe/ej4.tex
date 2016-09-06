@@ -21,48 +21,35 @@ Las funciones \textbf{void load(int pid)} y \textbf{void unblock(int pid)} encol
 
 ~
 
-La función \textbf{int tick(int cpu, const enum Motivo m)} tiene un comportamiento mas particular que pasamos a detallar en el siguiente pseudocódigo:
+La función \textbf{int tick(int cpu, const enum Motivo m)} tiene un comportamiento más particular que pasamos a detallar en el siguiente pseudocódigo:
 
 ~
 
 \begin{algorithmic}
 \Function{int tick}{int cpu, const enum Motivo m}
 
-	\If {\emph{Si la tarea actual es la IDLE\_TASK}}
-		\If{\emph{Si la cola \textbf{cola\_procesos} no esta vacía}}
+	\If {\emph{Si la tarea actual es la IDLE\_TASK y si la cola \textbf{cola\_procesos} no esta vacía}}
+		\State Actualizo el quantum del core.
+		\State Desencolo un proceso de \textbf{cola\_procesos} y lo devuelvo.
+			
+	\ElsIf{\emph{Si se produjo un nuevo tick de clock}}
+		\State Resto en uno al quantum del proceso actual.
+		\newline
+		\If{\emph{Si el quantum del proceso actual es igual a cero y la cola \textbf{cola\_procesos} no esta vacía}}
+			\State Encolo el proceso actual.
+			\State Desencolo el proximo de la cola y lo devuelvo
 			\State Actualizo el quantum del core.
-			\State Desencolo un proceso de \textbf{cola\_procesos} y lo devuelvo.
-		\Else
-			\State Devuelvo IDLE\_TASK
-		
+		\ElsIf{\emph{Si el quantum del proceso actual es igual a cero y la cola \textbf{cola\_procesos} está vacía}}
+			\State Devuelvo el proceso que esta corriendo.
+			\State Actualizo el quantum del core.
 		\EndIf
 		\newline
-	
+	\ElsIf{\emph{Si el motivo es que el proceso se bloqueo o terminó y la cola \textbf{cola\_procesos} no esta vacía}}
+		\State Actualizo el quantum del core.
+		\State Desencolo un proceso de \textbf{cola\_procesos} y lo devuelvo.
 	\Else
-		\If{\emph{Si se produjo un nuevo tick de clock}}
-			\State Resto en uno al quantum del proceso actual.
-
-			\If{\emph{Si el quantum del proceso actual es igual a cero.}}
-				\newline
-				\If{\emph{Si \textbf{cola\_procesos} no esta vacía}}
-					\State Encolo el proceso actual.
-					\State Desencolo el proximo de la cola y lo devuelvo
-				\EndIf
-
-				\State Actualizo el quantum del core.
-			\Else
-				\State Devuelvo el proceso que esta corriendo.
-			\EndIf
-		\Else
-			\State \textbackslash \textbackslash \textit{Ocurre lo mismo si el motivo es que el proceso se bloqueó o terminó.}
-			\newline
-			\If{\emph{Si la cola \textbf{cola\_procesos} no esta vacía}}
-				\State Actualizo el quantum del core.
-				\State Desencolo un proceso de \textbf{cola\_procesos} y lo devuelvo.
-			\Else
-				\State Devuelvo IDLE\_TASK
-			\EndIf
-		\EndIf
+		\State Devuelvo IDLE\_TASK
+	
 	\EndIf
 \EndFunction	
 \end{algorithmic}
