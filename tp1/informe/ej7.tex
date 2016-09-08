@@ -2,19 +2,19 @@
 
 Para este ejercicio se pedía realizar las implementaciones de dos nuevos algoritmos de scheduling, del tipo \emph{shortest job first}, que sólo corren tareas del tipo TaskCPU.
 La primera de ellas, llamada \textbf{SJF}, elige y ejecuta siempre la tarea con el menor tiempo de CPU que necesite hasta terminar.
-La segunda, llamada \textbf{RSJF}, también elige y ejectua la tarea con el menor tiempo de CPU que necesite pero, cada core posée un quantum por lo que cuando se termina éste, se toma una nueva tarea con el menor tiempo de CPU, se encola la tarea desalojada y luego se reinicia el quantum del core.
+La segunda, llamada \textbf{RSJF}, también elige y ejecuta la tarea con el menor tiempo de CPU que necesite pero, cada core posee un quantum por lo que cuando se termina éste, se toma una nueva tarea con el menor tiempo de CPU, se encola la tarea desalojada y luego se reinicia el quantum del core.
 
 \subsection{Implementación \textbf{SJF}}
 
-Esta implementación toma como parametros la cantidad de cores y los tiempos de cada proceso a ser ejecutado en el orden en que se los carga.
+Esta implementación toma como parámetros la cantidad de cores y los tiempos de cada proceso a ser ejecutado en el orden en que se los carga.
 
-Para facilitar el manejo de los procesos con sus respectivos tiempos, generamos un struct llamado \emph{Proceso} que tiene como estructura el pid del proceso y su tiempo de ejecución. También posée el operador $<$ que sirve para comparar los tiempos de los procesos.
+Para facilitar el manejo de los procesos con sus respectivos tiempos, generamos un struct llamado \emph{Proceso} que tiene como contenido el pid del proceso y su tiempo de ejecución. También posee el operador $<$ que sirve para comparar los tiempos de los procesos.
 
-Con esto, el scheduler posée como estructra dos colas que detallamos a continuación:
+Con esto, el scheduler posee como estructura dos colas que detallamos a continuación:
 
 \begin{itemize}
 
-\item \emph{tiempos\_procesos}: una cola normal que se utiliza para encolar los tiempos de los procesos que recibe como parametro este scheduler.
+\item \emph{tiempos\_procesos}: una cola normal que se utiliza para encolar los tiempos de los procesos que recibe como parámetro este scheduler.
 
 \item \emph{cola\_procesos}: una cola de prioridad de la estructura \emph{Proceso}, donde la máxima prioridad la tiene el proceso con menor tiempo de ejecución.
 
@@ -22,7 +22,7 @@ Con esto, el scheduler posée como estructra dos colas que detallamos a continua
 
 El constructor de este scheduler simplemente encola los tiempos de los procesos en la cola \emph{tiempos\_procesos}.
 
-La función \textbf{load} crea un nuevo Proceso con el pid que recibe como parametro y el primer elemento de la cola (ya que ésta tiene los tiempos de los elementos en el orden que van llegando) y encolo este Proceso en la cola de prioridad \emph{cola\_procesos}.
+La función \textbf{load} crea un nuevo Proceso con el pid que recibe como parámetro y el primer elemento de la cola (ya que ésta tiene los tiempos de los elementos en el orden que van llegando) y encolo este Proceso en la cola de prioridad \emph{cola\_procesos}.
 
 La función \textbf{unblock} no se utiliza ya que, por enunciado, este scheduler sólo corre tareas del tipo TaskCPU (que no tiene llamadas bloqueantes).
 
@@ -48,11 +48,11 @@ La función \textbf{tick} en este scheduler es muy sencilla, pasamos a mostrar u
 
 \subsection{Implementación \textbf{RSJF}}
 
-Esta implementación toma como parametros la cantidad de cores, sus quantums y los tiempos de cada proceso a ser ejecutado en el orden en que se los carga.
+Esta implementación toma como parámetros la cantidad de cores, sus quantums y los tiempos de cada proceso a ser ejecutado en el orden en que se los carga.
 
 Esta implementación también posee un struct llamado \emph{ProcesoRSJF} que es igual al de la implementación anterior.
 
-Este scheduler posée como estructra lo que detallamos a continuación:
+Este scheduler posee como estructra lo que detallamos a continuación:
 
 \begin{itemize}
 
@@ -62,13 +62,13 @@ Este scheduler posée como estructra lo que detallamos a continuación:
 
 \item \emph{proceso\_en\_core}: vector de la estructura \emph{ProcesoRSJF}, de tamaño de cantidad de cores, en donde guardo el proceso que actualmente esta corriendo en cada core.
 
-\item \emph{tiempos\_procesos}: una cola normal que se utiliza para encolar los tiempos de los procesos que recibe como parametro este scheduler.
+\item \emph{tiempos\_procesos}: una cola normal que se utiliza para encolar los tiempos de los procesos que recibe como parámetro este scheduler.
 
 \item \emph{cola\_procesos}: una cola de prioridad de la estructura \emph{ProcesoRSJF}, donde la máxima prioridad la tiene el proceso con menor tiempo de ejecución.
 
 \end{itemize}
 
-En el constructor, iniciamos los vectores \emph{quantum\_por\_core}y \emph{quantum\_actual} con el quantum de cada core y al vector \emph{proceso\_en\_core} con procesos vacios (pid = 0 y tiempo = 0). También encolamos en la cola \emph{tiempos\_procesos} los tiempos de cada proceso.
+En el constructor, iniciamos los vectores \emph{quantum\_por\_core}y \emph{quantum\_actual} con el quantum de cada core y al vector \emph{proceso\_en\_core} con procesos vacíos (pid = 0 y tiempo = 0). También encolamos en la cola \emph{tiempos\_procesos} los tiempos de cada proceso.
 
 La función \textbf{load} y \textbf{unblock} son iguales que en la implementación anterior.
 

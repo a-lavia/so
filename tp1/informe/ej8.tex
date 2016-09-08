@@ -1,6 +1,6 @@
 \section{Ejercicio 8}
 
-Para este ejercicio se pedía realizar tareas de prueba para comparar los scheduleres \emph{Round Robin}, \emph{FCFS}, \emph{SJF} y \emph{RSJF}.
+Para este ejercicio se pedía realizar tareas de prueba para comparar los schedulers \emph{Round Robin}, \emph{FCFS}, \emph{SJF} y \emph{RSJF}.
 
 Luego, realizar comparaciones según latencia, waiting time y turnaround, realizar gráficos y tablas para exponer los resultados y dar una conclusión.
 
@@ -89,9 +89,9 @@ Los gráficos obtenidos son:
 	\end{tabular}
 \end{center}
 
-Cómo podemos observar por los calculos, la latencia del scheduler \textbf{FCFS} para este lote de tareas fue el que tuvo el promedio mayor. Esto se debe a que este toma un proceso y lo corre hasta terminar y eso hace esperar a los demas procesos en la cola. En cuanto a los demás schedulers, \textbf{Round Robin} fue la menor, tuvo la menor latencia, esto se debe a que, como su quantum era 3, la espera para los demas procesos era mas corta. \textbf{SJF} y \textbf{RSJF} se comportaron de una forma similar y cercana, tanto entre si como con \textbf{Round Robin}.
+Cómo podemos observar por los cálculos, la latencia del scheduler \textbf{FCFS} para este lote de tareas fue el que tuvo el promedio mayor. Esto se debe a que este toma un proceso y lo corre hasta terminar y eso hace esperar a los demás procesos en la cola. En cuanto a los demás schedulers, \textbf{Round Robin} fue la menor, tuvo la menor latencia, esto se debe a que, como su quantum era 3, la espera para los demás procesos era mas corta. \textbf{SJF} y \textbf{RSJF} se comportaron de una forma similar y cercana, tanto entre si como con \textbf{Round Robin}.
 
-Sobre el waiting time, \textbf{Round Robin} fue el scheduler con el promedio mas alto, esto se debe a que, al desalojar los procesos en un quantum fijo hace que genere mas tiempo de espera hasta que terminan. El scheduler con menor waiting time promedio fue \textbf{SJF}, al elegir siempre el proceso con el menor tiempo y ejecutarlo hasta terminar genera que tenga menos desalojos. Esto no sucede con \textbf{RSJF}, aunque elija el proceso con el menor tiempo para terminar, depende mucho del quantum que posée que, mientras más chico es, más desalojos va a tener (siempre tomando en cuenta que los procesos tienen más tiempo de ejecución que quantum) y esto hace que aumente.
+Sobre el waiting time, \textbf{Round Robin} fue el scheduler con el promedio mas alto, esto se debe a que, al desalojar los procesos en un quantum fijo hace que genere mas tiempo de espera hasta que terminan. El scheduler con menor waiting time promedio fue \textbf{SJF}, al elegir siempre el proceso con el menor tiempo y ejecutarlo hasta terminar genera que tenga menos desalojos. Esto no sucede con \textbf{RSJF}, aunque elija el proceso con el menor tiempo para terminar, depende mucho del quantum que posee que, mientras más chico es, más desalojos va a tener (siempre tomando en cuenta que los procesos tienen más tiempo de ejecución que quantum) y esto hace que aumente.
 
 Sobre el tiempo total de ejecución, son muy similares a los del waiting time, y se debe a los motivos descriptos.
 
@@ -182,7 +182,7 @@ La cantidad de cores utilizados en este caso es de uno. Y, en el caso de \emph{R
 
 En este caso, intentamos ver el comportamiento de los schedulers en donde las tareas van apareciendo con una frecuencia constante.
 
-Los graficos obtenidos son:
+Los gráficos obtenidos son:
 
 \begin{figure}[!h]
 	\begin{center}
@@ -259,11 +259,11 @@ Los graficos obtenidos son:
 
 Los datos obtenidos sobre este lote de tareas reflejan una leve mejora con respecto a la primera prueba donde las tareas son agregadas a los schedulers en el mismo tiempo.
 
-Sobre la latencia, \textbf{Round Robin} sigue teniendo una mejor performance, seguído de cerca por \textbf{SJF} y \textbf{RSJF} y, \textbf{FCFS} se mantuvo con la peor latencia. \textbf{FCFS} podría mejorarla si procesos nuevos aparezcan una vez que termino otro, pero es un caso muy particular.
+Sobre la latencia, \textbf{Round Robin} sigue teniendo una mejor performance, seguido de cerca por \textbf{SJF} y \textbf{RSJF} y, \textbf{FCFS} se mantuvo con la peor latencia. \textbf{FCFS} podría mejorarla si procesos nuevos aparezcan una vez que termino otro, pero es un caso muy particular.
 
-Sobre waiting time, \textbf{SJF} obtuvo la mejor performance, esto se debe a que siempre corre los procesos que terminan más rápido hasta terminarlos y esto genera que el tiempo de espera sea mucho menor. \textbf{Round Robin} tuvo la peor performance, esto se debe a la cantidad de procesos que posée y el quantum dado a cada uno, si se aumenta un poco el quantum podría mejorar su performance sobre el waiting time.
+Sobre waiting time, \textbf{SJF} obtuvo la mejor performance, esto se debe a que siempre corre los procesos que terminan más rápido hasta terminarlos y esto genera que el tiempo de espera sea mucho menor. \textbf{Round Robin} tuvo la peor performance, esto se debe a la cantidad de procesos que posee y el quantum dado a cada uno, si se aumenta un poco el quantum podría mejorar su performance sobre el waiting time.
 
-Sobre el tiempo total de ejecución, los valores entre sí son muy parecidos a los del waiting time, donde hicímos algunos comentarios al respecto.
+Sobre el tiempo total de ejecución, los valores entre sí son muy parecidos a los del waiting time, donde hicimos algunos comentarios al respecto.
 
 Cómo en la prueba anterior, decidimos realizar esta misma prueba pero agregando un core más a cada implementación para ver cómo mejoran las performances. En los schedulers \textbf{Round Robin} y \textbf{RSJF} el quantum de ambos cores es de tres (lo mantuvimos igual).
 
@@ -346,7 +346,7 @@ La latencia entre los schedulers fue similar entre los cuatro schedulers, con un
 
 Sobre waiting time, \textbf{Round Robin} mantuvo la peor performance pero \textbf{FCFS} pudo igualar a la mejor performance que la tenía \textbf{SJF} y esto se debe a lo comentado, que se vayan encolando procesos a medida que van corriendo otros genera menor tiempo de espera.
 
-En el tiempo total de ejecución promedio también el scheduler \textbf{FCFS} obtuvo una mejora de performance notoria llevandolo a obtener la mejor performance junto con \textbf{SJF}. \textbf{Round Robin} mantuvo la peor performance de esta comparación.
+En el tiempo total de ejecución promedio también el scheduler \textbf{FCFS} obtuvo una mejora de performance notoria llevándolo a obtener la mejor performance junto con \textbf{SJF}. \textbf{Round Robin} mantuvo la peor performance de esta comparación.
 
 \subsection{Comentarios Finales}
 
@@ -362,10 +362,10 @@ De estas pruebas podemos sacar algunas conclusiones:
 
 \item El scheduler con peor waiting time fue \textbf{Round Robin}. Esto se debe a que los procesos cuando terminan su quantum se desalojan para poder correr a otros y ese tiempo del desalojo puede ser muy alto si los quantums son bajos o podría generar un mejor waiting time si los quantums son más altos pero empeoraría la latencia del mismo en donde fue el mejor.
 
-\item En las mediciones del tiempo total de ejecición los valores dieron muy parecidos en proporcion con los del waiting time. Esto se debe también a que para las pruebas fueron utilizados lotes con tareas no bloqueantes en donde podría cambiar el resultado.
+\item En las mediciones del tiempo total de ejecución los valores dieron muy parecidos en proporción con los del waiting time. Esto se debe también a que para las pruebas fueron utilizados lotes con tareas no bloqueantes en donde podría cambiar el resultado.
 
-\item Resulta muy dificil realizar una comparación entre estos tipos de scheduler, sobre todo \textbf{SJF} y \textbf{RSJF} que necesitan saber de antemano cuanto tiempo de duración va a tener un proceso. Aparte de que estos schedulers planteados en este trabajo no toman procesos que se bloquean.
+\item Resulta muy difícil realizar una comparación entre estos tipos de scheduler, sobre todo \textbf{SJF} y \textbf{RSJF} que necesitan saber de antemano cuanto tiempo de duración va a tener un proceso. Aparte de que estos schedulers planteados en este trabajo no toman procesos que se bloquean.
 
-\item Las comparaciones muestran verdaderas fortalezas y debilidades de cada scheduler y que ninguno es mejor que los demás en todos los casos. Esto hace que uno tenga que pensar bien el tipo de scheduler para que un determinado sistema obtenga una mejor performance y no tomar esto a la ligera ya que el elegir un scheduler equivocado va a hacer que el sistema se alentice.
+\item Las comparaciones muestran verdaderas fortalezas y debilidades de cada scheduler y que ninguno es mejor que los demás en todos los casos. Por esto se debe analizar un sistema bajo un contexto para determinar que tipo de scheduling utilizar y así obtener un mejor desempeño y uso de recursos, no se debe tomar a la ligera ya que el elegir un scheduler equivocado va a hacer que el sistema se ralentice.
 
 \end{itemize}

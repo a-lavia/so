@@ -1,14 +1,14 @@
 \section{Ejercicio 3}
 
-En este ejercicio nos piden programar la tarea \textbf{TaskBach} que recibe dos parametros: \textit{total\_cpu} y \textit{cant\_bloqueos}. La misma debe realizar \textit{cant\_bloqueos} llamadas bloqueantes en momentos elegidos pseudoaleatoriamente y, en cada una de esas llamadas debe permanecer bloqueada durante dos ciclos de reloj. El tiempo de CPU total utilizado debe ser el de \textit{total\_cpu} ciclos de reloj.
+En este ejercicio nos piden programar la tarea \textbf{TaskBach} que recibe dos parámetros: \textit{total\_cpu} y \textit{cant\_bloqueos}. La misma debe realizar \textit{cant\_bloqueos} llamadas bloqueantes en momentos elegidos pseudo aleatoriamente y, en cada una de esas llamadas debe permanecer bloqueada durante dos ciclos de reloj. El tiempo de CPU total utilizado debe ser el de \textit{total\_cpu} ciclos de reloj.
 
-Para que esta tarea tenga el comportamiento pedido, lo que hacemos contar cual es la cantidad de tiempo que se va a utilizar el cpu de la siguiente forma:
+Para que esta tarea tenga el comportamiento pedido, lo que hacemos contar cual es la cantidad de tiempo que se va a utilizar el CPU de la siguiente forma:
 
 \begin{center}
 		int \textit{cpu\_restante} = \textit{total\_cpu} - \textit{cant\_bloqueos} - 1;
 \end{center}
 
-Cada llamada bloqueante utiliza un clock en CPU y la función \textbf{return} tambíen utiliza un clock. Por ende, los clocks restantes son los que utilizamos para hacer la llamada a la función \textbf{uso\_CPU}.
+Cada llamada bloqueante utiliza un ciclo de reloj y la función \textbf{return} también utiliza un ciclo. Por ende, los ciclos restantes son los que utilizamos para hacer la llamada a la función \textbf{uso\_CPU}.
 
 Luego, tenemos el siguiente ciclo:
 
@@ -25,7 +25,7 @@ Luego, tenemos el siguiente ciclo:
 \EndWhile
 \end{algorithmic}
 ~
-De esta forma, vamos a obtener llamadas bloqueantes en momentos elegidos pseudoaleatoriamente.
+De esta forma, vamos a obtener llamadas bloqueantes en momentos elegidos pseudo aleatoriamente.
 
 Generamos y ejecutamos el siguiente lote, y luego graficamos la simulación usando el algoritmo FCFS con un costo de 3 clocks para cambiar de contexto.
 

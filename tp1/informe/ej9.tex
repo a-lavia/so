@@ -4,7 +4,7 @@ Para este ejercicio se pedía implementar el scheduler \textit{Multilevel Feedba
 
 \subsection{Implementación}
 
-Este scheduler posée n colas \emph{Round Robin} y a cada una de ellas le está asociado un quantum. Estos son recibidos como parámetro.
+Este scheduler posee n colas \emph{Round Robin} y a cada una de ellas le está asociado un quantum. Estos son recibidos como parámetro.
 
 La estructura que utilizamos es la siguiente:
 
@@ -12,7 +12,7 @@ La estructura que utilizamos es la siguiente:
 
 \item \textbf{colas\_de\_procesos}: vector de colas donde las de mayor prioridad se encuentran en los primeros índices y las de menor en los últimos.
 
-\item \textbf{quantums\_por\_cola}: vector que posée el quantum que tiene cada cola.
+\item \textbf{quantums\_por\_cola}: vector que posee el quantum que tiene cada cola.
 
 \item \textbf{procesos\_corriendo}: una lista de procesos que están corriendo o bloqueados. Un proceso es una estructura en donde tiene su pid, la cola de la que fue tomado y el quantum actual.
 
@@ -69,7 +69,7 @@ La función \textbf{tick} tiene un comportamiento mas complicado que pasamos a d
 
 \subsection{Pruebas}
 
-Para estas pruebas generamos un lote (\textit{ej9lote}) que posée cinco tareas de los tipos TaskConsola, TaskIO, TaskBatch y TaskCPU. Estas son lanzadas desde el comienzo con una diferencia de dos clocks cada una. La cantidad de cores es de uno, el costo del cambio de contexto es de dos y el costo de cambiar un proceso de núcleo es de uno.
+Para estas pruebas generamos un lote (\textit{ej9lote}) que posee cinco tareas de los tipos TaskConsola, TaskIO, TaskBatch y TaskCPU. Estas son lanzadas desde el comienzo con una diferencia de dos clocks cada una. La cantidad de cores es de uno, el costo del cambio de contexto es de dos y el costo de cambiar un proceso de núcleo es de uno.
 
 En este caso, tenemos tres colas de quantums decrecientes (6, 4 y 2), crecientes (2, 4 y 6) y constantes (3, 3 y 3). Veamos cómo se comportan:
 

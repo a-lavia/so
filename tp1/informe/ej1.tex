@@ -1,6 +1,6 @@
 \section{Ejercicio 1}
 
-Para la resolución de este ejercicio, se requeria programar un tipo de tarea \emph{TaskConsola} donde debia realizar $n$ llamadas bloqueantes, cada una con una duración aleatoria de valor $random\_num: bmin \leq random\_ num \leq bmax$.
+Para la resolución de este ejercicio, se requería programar un tipo de tarea \emph{TaskConsola} donde debía realizar $n$ llamadas bloqueantes, cada una con una duración aleatoria de valor $random\_num: bmin \leq random\_ num \leq bmax$.
 ~
 Para lograr esto, ciclamos \emph{n} veces en el cual, en cada iteración generamos un número pseudoaleatorio utilizando la función \textbf{rand()} de la forma:
 
@@ -8,7 +8,7 @@ Para lograr esto, ciclamos \emph{n} veces en el cual, en cada iteración generam
 	\textbf{random\_num = bmin + rand() \% (bmax - bmin + 1)}
 \end{center}
 
-Una vez hecho esto, realizamos la llamada bloqueante con la cantidad de clocks definida por ese valor pseudoaleatorio creado y luego ejecutamos un clock.
+Una vez hecho esto, realizamos la llamada bloqueante con la cantidad de ciclos definida por ese valor pseudoaleatorio creado y luego ejecutamos un tick.
 
 \begin{figure}[!h]
 	\begin{center}
