@@ -29,6 +29,11 @@ SchedMFQ::~SchedMFQ() {
 			delete proceso_en_core[i];
 		}
 	}
+	for(unsigned int i = 0; i < proceso_bloqueado.size(); i++){
+		if(proceso_bloqueado[i] != NULL) {
+			delete proceso_bloqueado[i];
+		}
+	}
 	for(unsigned int i = 0; i<colas_de_procesos.size();i++) {
 		while(!colas_de_procesos[i].empty()) {
 			proceso* p = colas_de_procesos[i].front();
