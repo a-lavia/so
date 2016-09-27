@@ -3,14 +3,17 @@
 
 #include <vector>
 #include <queue>
-#include <list>
 #include "basesched.h"
 
-typedef struct {int pid; int ultima_cola; int quantum;} proceso;
-#define COLAS_VACIAS -1
-
+struct proceso {
+	int pid;
+	int quantum;
+	unsigned int ultima_cola;
+	proceso(int pid, int quantum) : pid(pid), quantum(quantum), ultima_cola(0) { };
+};
 
 using namespace std;
+
 class SchedMFQ : public SchedBase {
 	public:
 		SchedMFQ(std::vector<int> argn);
@@ -22,15 +25,14 @@ class SchedMFQ : public SchedBase {
 	
 	private:
 
-		int hayProcesosEnColas();
-		void eliminarProcesoDeLista(int pid);
-		void agregarProcesoALista(int pid, int cola, int quantum);
-		int actualizoQuantum(int pid, int q);
-		int dameCola(int pid);
+		proceso* siguiente_proceso();
+		void sacar_proceso(int core);
 
-		vector< queue<int> > colas_de_procesos;
-		vector<int> quantums_por_cola;
-		list<proceso> procesos_corriendo;
+		vector<int> quantums_por_cola; //El quantum que corresponde a cada cola
+		vector< queue<proceso*> > colas_de_procesos; //Vector de colas de procesos
+		vector<proceso*> proceso_en_core; //Procesos corriendo
+		vector<proceso*> proceso_bloqueado; //Procesos bloqueados
+
 };
 
 #endif

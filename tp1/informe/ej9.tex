@@ -8,23 +8,30 @@ Este scheduler posee n colas \emph{Round Robin} y a cada una de ellas le está a
 
 La estructura que utilizamos es la siguiente:
 
+		vector<int> quantums_por_cola; //El quantum que corresponde a cada cola
+		vector< queue<proceso*> > colas_de_procesos; //Vector de colas de procesos
+		vector<proceso*> proceso_en_core; //Procesos corriendo
+		vector<proceso*> proceso_bloqueado; //Procesos bloqueados
+
 \begin{itemize}
+
+\item \textbf{quantums\_por\_cola}: vector que posee el quantum que corresponde a cada cola.
 
 \item \textbf{colas\_de\_procesos}: vector de colas donde las de mayor prioridad se encuentran en los primeros índices y las de menor en los últimos.
 
-\item \textbf{quantums\_por\_cola}: vector que posee el quantum que tiene cada cola.
+\item \textbf{proceso\_en\_core}: vector que toma como índice el core que tiene un puntero al proceso que le corresponde
 
-\item \textbf{procesos\_corriendo}: una lista de procesos que están corriendo o bloqueados. Un proceso es una estructura en donde tiene su pid, la cola de la que fue tomado y el quantum actual.
+\item \textbf{proceso\_bloqueado}: vector de punteros a procesos que fueron bloqueados
 
 \end{itemize}
 
-En el constructor inicializamos los vectores \textbf{colas\_de\_procesos} y \textbf{quantums\_por\_cola}. Mientras haya quantums en el vector que se recibe como parámetro se van agregando colas a \textbf{colas\_de\_procesos} y el quantum en \textbf{quantums\_por\_cola}.
+En el constructor se inicializa el vector \textbf{proceso\_en\_core} con la cantidad de cores recibidos por parámetro y inicializamos los vectores \textbf{colas\_de\_procesos} y \textbf{quantums\_por\_cola}. Mientras haya quantums en el vector que se recibe como parámetro se van agregando colas a \textbf{colas\_de\_procesos} y el quantum en \textbf{quantums\_por\_cola}.
 
 En la función \textbf{load}, el nuevo proceso es cargado en la cola de mayor prioridad (índice 0) de \textbf{colas\_de\_procesos}.
 
-En la función \textbf{unblock}, se busca el proceso en la lista \textbf{procesos\_corriendo} para ver de que cola fue tomado y se lo inserta en la siguiente (salvo que sea la última, si lo es se queda en ella). Luego se lo elimina de la lista.
+En la función \textbf{unblock}, se busca el proceso en el vector \textbf{proceso\_bloqueado} para volverlo a insertar en \textbf{colas\_de\_procesos} con su prioridad elevada.
 
-La función \textbf{tick} tiene un comportamiento mas complicado que pasamos a detallar en el siguiente pseudocódigo:
+La función \textbf{tick} tiene un comportamiento mas complejo que pasamos a detallar en el siguiente pseudocódigo:
 
 ~
 
@@ -33,45 +40,35 @@ La función \textbf{tick} tiene un comportamiento mas complicado que pasamos a d
 
 	\If {\emph{Si la tarea actual es la IDLE\_TASK y hay procesos en alguna cola}}
 		\State Desencolo el proceso de cola de mayor prioridad.
-		\State Agrego el proceso en la lista.
+		\State Agrego el proceso al core.
 		\State Lo devuelvo.
 		
 	
 	\ElsIf{\emph{Si el motivo fue un TICK}}
 		\State Actualizo el quantum de la tarea.
 
-		\If{\emph{Si terminó su quantum y hay otros procesos encolados.}}
-			\State Quito el proceso actual de la lista \textbf{procesos\_corriendo}. Y lo encolo en la siguiente cola.
-			\State Tomo el nuevo proceso de la cola de mayor prioridad, lo agrego a la lista \textbf{procesos\_corriendo} y lo devuelvo.
-
-		\ElsIf{\emph{Si terminó su quantum y no hay otros procesos encolados.}}
-			\State Actualizo el quantum y lo devuelvo.
-
+		\If{\emph{Si terminó su quantum}}
+			\State Quito el proceso de \textbf{proceso\_en\_core}. Y lo encolo en la siguiente cola con menor prioridad.
+			\State Tomo un nuevo proceso de la cola de mayor prioridad, lo agrego al vector \textbf{proceso\_en\_core} y lo devuelvo.
 		\EndIf
 
-	\ElsIf{\emph{Si el motivo fue un EXIT y hay procesos encolados}}
-		\State Elimino el proceso que termino de la lista \textbf{procesos\_corriendo}.
-		\State Desencolo el proceso de cola de mayor prioridad.
-		\State Agrego el proceso en la lista.
-		\State Lo devuelvo.
+	\ElsIf{\emph{Si el motivo fue un EXIT}}
+		\State Elimino el proceso que termino.
+		\State Tomo un nuevo proceso de la cola de mayor prioridad, lo agrego al vector \textbf{proceso\_en\_core} y lo devuelvo.
 
-	\ElsIf{\emph{Si el motivo fue un BLOCK y hay procesos encolados}}
-		\State Desencolo el proceso de cola de mayor prioridad.
-		\State Agrego el proceso en la lista.
-		\State Lo devuelvo.
+	\ElsIf{\emph{Si el motivo fue un BLOCK}}
+		\State Agrego el proceso al vector \textbf{proceso\_bloqueado}
+		\State Tomo un nuevo proceso de la cola de mayor prioridad, lo agrego al vector \textbf{proceso\_en\_core} y lo devuelvo.
 	
-	\Else
-		\State Devuelvo IDLE\_TASK.
-
 	\EndIf
 \EndFunction	
 \end{algorithmic}
 
 \subsection{Pruebas}
 
-Para estas pruebas generamos un lote (\textit{ej9lote}) que posee cinco tareas de los tipos TaskConsola, TaskIO, TaskBatch y TaskCPU. Estas son lanzadas desde el comienzo con una diferencia de dos clocks cada una. La cantidad de cores es de uno, el costo del cambio de contexto es de dos y el costo de cambiar un proceso de núcleo es de uno.
+Para estas pruebas generamos un lote (\textit{ej9lote}) que posee cinco tareas de los tipos TaskCPU, TaskConsola, TaskBatch y TaskAlterno, elegimos este lote para estudiar como se comporta con tareas que hacen uso intensivo del CPU y tareas interactivas que realizan llamadas bloqueantes. Estas son lanzadas desde el comienzo con una diferencia de dos clocks cada una. La cantidad de cores es de uno, el costo del cambio de contexto es de dos y el costo de cambiar un proceso de núcleo es de uno.
 
-En este caso, tenemos tres colas de quantums decrecientes (6, 4 y 2), crecientes (2, 4 y 6) y constantes (3, 3 y 3). Veamos cómo se comportan:
+En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes (4, 6 y 8) y (1, 2, 3). Veamos cómo se comportan:
 
 \begin{figure}[!h]
 	\begin{center}
