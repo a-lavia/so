@@ -26,7 +26,6 @@ class SchedMFQ : public SchedBase {
 	private:
 
 		proceso* siguiente_proceso();
-		void sacar_proceso(int core);
 
 		vector<int> quantums_por_cola; //El quantum que corresponde a cada cola
 		vector< queue<proceso*> > colas_de_procesos; //Vector de colas de procesos

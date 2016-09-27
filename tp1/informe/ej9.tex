@@ -8,11 +8,6 @@ Este scheduler posee n colas \emph{Round Robin} y a cada una de ellas le está a
 
 La estructura que utilizamos es la siguiente:
 
-		vector<int> quantums_por_cola; //El quantum que corresponde a cada cola
-		vector< queue<proceso*> > colas_de_procesos; //Vector de colas de procesos
-		vector<proceso*> proceso_en_core; //Procesos corriendo
-		vector<proceso*> proceso_bloqueado; //Procesos bloqueados
-
 \begin{itemize}
 
 \item \textbf{quantums\_por\_cola}: vector que posee el quantum que corresponde a cada cola.
@@ -68,12 +63,14 @@ La función \textbf{tick} tiene un comportamiento mas complejo que pasamos a det
 
 Para estas pruebas generamos un lote (\textit{ej9lote}) que posee cinco tareas de los tipos TaskCPU, TaskConsola, TaskBatch y TaskAlterno, elegimos este lote para estudiar como se comporta con tareas que hacen uso intensivo del CPU y tareas interactivas que realizan llamadas bloqueantes. Estas son lanzadas desde el comienzo con una diferencia de dos clocks cada una. La cantidad de cores es de uno, el costo del cambio de contexto es de dos y el costo de cambiar un proceso de núcleo es de uno.
 
-En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes (4, 6 y 8) y (1, 2, 3). Veamos cómo se comportan:
+En este caso, tenemos tres colas de quantums crecientes (2, 7 y 13), (4, 6 y 8) y (1, 2, 3). Veamos cómo se comportan:
+
+\newpage
 
 \begin{figure}[!h]
 	\begin{center}
 		\includegraphics[width=500px]{imagenes/ej9_1.png}
-		\caption{Ejecución del lote \emph{ej9lote} con tres colas de quantum decreciente.}
+		\caption{Ejecución del lote \emph{ej9lote} con tres colas de quantum 2, 7 y 13.}
 		\label{fig:grafico_ej9_1}
 	\end{center}
 \end{figure}
@@ -81,7 +78,7 @@ En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes
 \begin{figure}[!h]
 	\begin{center}
 		\includegraphics[width=500px]{imagenes/ej9_2.png}
-		\caption{Ejecución del lote \emph{ej9lote} con tres colas de quantum creciente.}
+		\caption{Ejecución del lote \emph{ej9lote} con tres colas de quantum 4, 6 y 8.}
 		\label{fig:grafico_ej9_2}
 	\end{center}
 \end{figure}
@@ -89,7 +86,7 @@ En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes
 \begin{figure}[!h]
 	\begin{center}
 		\includegraphics[width=500px]{imagenes/ej9_3.png}
-		\caption{Ejecución del lote \emph{ej9lote} con tres colas con quantum 3.}
+		\caption{Ejecución del lote \emph{ej9lote} con tres colas con quantum 1, 2, 3.}
 		\label{fig:grafico_ej9_3}
 	\end{center}
 \end{figure}
@@ -100,9 +97,9 @@ En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes
 		\hline
 		\multicolumn{3}{|c|}{\large{\textbf{Latencia Promedio}}} \\
 		\hline
-		\textbf{Quantum Decreciente} & \textbf{Quantum Creciente} & \textbf{Quantum Estable} \\
+		\textbf{Quantums 2, 7, 13} & \textbf{Quantums 4, 6, 8} & \textbf{Quantums 1, 2, 3} \\
 		\hline
-		8,4 & 5,2 & 6 \\
+		4,25 & 5,75 & 3,5 \\
 		\hline
 	\end{tabular}
 \end{center}
@@ -113,9 +110,9 @@ En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes
 		\hline
 		\multicolumn{3}{|c|}{\large{\textbf{Waiting Time Promedio}}} \\
 		\hline
-		\textbf{Quantum Decreciente} & \textbf{Quantum Creciente} & \textbf{Quantum Estable} \\
+		\textbf{Quantums 2, 7, 13} & \textbf{Quantums 4, 6, 8} & \textbf{Quantums 1, 2, 3} \\
 		\hline
-		50,2 & 57,4 & 58 \\
+		59,75 & 55,5 & 76,25 \\
 		\hline
 	\end{tabular}
 \end{center}
@@ -126,13 +123,11 @@ En este caso, tenemos tres colas de quantums crecientes (8, 10 y 12), crecientes
 		\hline
 		\multicolumn{3}{|c|}{\large{\textbf{Tiempo Total De Ejecución Promedio}}} \\
 		\hline
-		\textbf{Quantum Decreciente} & \textbf{Quantum Creciente} & \textbf{Quantum Estable} \\
+		\textbf{Quantums 2, 7, 13} & \textbf{Quantums 4, 6, 8} & \textbf{Quantums 1, 2, 3} \\
 		\hline
-		81,6 & 86,4 & 90,6 \\
+		84,25 & 81,5 & 100,5 \\
 		\hline
 	\end{tabular}
 \end{center}
 
-Cómo podemos observar en esta prueba, tener un quantum decreciente hace que la latencia sea la mayor, pero genera un waiting time y tiempo total de ejecución menores que las otras dos ejecuciones con quantum creciente y quantum estable. Tener un quantum creciente genera que su latencia promedio sea la menor pero con waiting time promedio y tiempo de ejecución promedio mucho mayores. Tener un quantum estable genera que este scheduler sea cómo un \textbf{Round Robin} común ya que no se diferencian las prioridades de las colas que pueda poseer.
-
-Este scheduler resulta interesante para analizar y comparar contra los otros schedulers vistos en este trabajo ya que podría mejorar la performance de estos. 
+Cómo podemos observar en esta prueba, las tareas interactivas que tienen muchas llamadas bloqueantes se ejecutan más frecuentemente que las que hacen uso intensivo del CPU dado que su prioridad aumenta en cada bloqueo. Por lo contrario se puede observar que las tareas que no tienen llamadas bloqueantes disminuyen su prioridad pero se ven recompensadas con un mayor quantum. En las pruebas con quantum pequeños el comportamiento es muy similar al de un Round Robin convencional dado que las tareas interactivas acaban con su quantum antes de realizar llamadas bloqueantes que aumentarían su prioridad, en cambio con colas de mayor quantum las tareas interactivas logran realizar sus llamadas bloqueadas y se puede ver explicitamente el funcionamiento de este scheduler.

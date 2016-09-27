@@ -55,7 +55,7 @@ ejercicio8:
 	./simusched lotes_de_tareas/ej8lote2.tsk 2 2 1 SchedRSJF 3 3 5 7 3 11 2  | python graphsched.py > ../informe/imagenes/ej8_prueba2_rsjf2.png
 
 ejercicio9:
-	./simusched lotes_de_tareas/ej9lote.tsk 1 2 1 SchedMFQ 8 10 12  | python graphsched.py > ../informe/imagenes/ej9_1.png
+	./simusched lotes_de_tareas/ej9lote.tsk 1 2 1 SchedMFQ 2 7 13  | python graphsched.py > ../informe/imagenes/ej9_1.png
 	./simusched lotes_de_tareas/ej9lote.tsk 1 2 1 SchedMFQ 4 6 8  | python graphsched.py > ../informe/imagenes/ej9_2.png
 	./simusched lotes_de_tareas/ej9lote.tsk 1 2 1 SchedMFQ 1 2 3  | python graphsched.py > ../informe/imagenes/ej9_3.png
 
