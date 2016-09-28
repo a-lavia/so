@@ -63,7 +63,7 @@ La función \textbf{tick} tiene un comportamiento mas complejo que pasamos a det
 
 Para estas pruebas generamos un lote (\textit{ej9lote}) que posee cinco tareas de los tipos TaskCPU, TaskConsola, TaskBatch y TaskAlterno, elegimos este lote para estudiar como se comporta con tareas que hacen uso intensivo del CPU y tareas interactivas que realizan llamadas bloqueantes. Estas son lanzadas desde el comienzo con una diferencia de dos clocks cada una. La cantidad de cores es de uno, el costo del cambio de contexto es de dos y el costo de cambiar un proceso de núcleo es de uno.
 
-En este caso, tenemos tres colas de quantums crecientes (2, 7 y 13), (4, 6 y 8) y (1, 2, 3). Veamos cómo se comportan:
+En este caso, tenemos tres colas de quantums crecientes (2, 7 y 13), (4, 6 y 8) y (1, 2 y 3). Veamos cómo se comportan:
 
 \newpage
 
@@ -131,3 +131,6 @@ En este caso, tenemos tres colas de quantums crecientes (2, 7 y 13), (4, 6 y 8) 
 \end{center}
 
 Cómo podemos observar en esta prueba, las tareas interactivas que tienen muchas llamadas bloqueantes se ejecutan más frecuentemente que las que hacen uso intensivo del CPU dado que su prioridad aumenta en cada bloqueo. Por lo contrario se puede observar que las tareas que no tienen llamadas bloqueantes disminuyen su prioridad pero se ven recompensadas con un mayor quantum. En las pruebas con quantum pequeños el comportamiento es muy similar al de un Round Robin convencional dado que las tareas interactivas acaban con su quantum antes de realizar llamadas bloqueantes que aumentarían su prioridad, en cambio con colas de mayor quantum las tareas interactivas logran realizar sus llamadas bloqueadas y se puede ver explicitamente el funcionamiento de este scheduler.
+
+Por otro lado, también se puede observar que este scheduler podría generar inanición ya que si se agregan constantemente más tareas con llamadas bloqueantes que tareas con más uso del CPU, estas ultimas se ejecutarían por estar en la primer cola pero después bajarian de prioridad y podrían no volver a ejectuarse.
+Por esto mismo, este scheduler resulta interesante para lotes de tareas con muchas llamadas bloqueantes dado que serían las únicas tareas que irían aumentando y disminuyendo prioridades de acuerdo a cómo se está comportando (uso del CPU o con entrada/salida), y no tanto para tareas que utilicen mucho CPU ya que estas sólo disminuyen su prioridad.
