@@ -10,7 +10,7 @@ También, en los experimentos el costo de cambiar de contexto es de dos y el cos
 
 \subsection{Primera Prueba}
 
-Para esta prueba utilizamos el lote de tareas \textbf{ej8lote1}, en donde estas son lanzadas en al mismo tiempo al comienzo de la ejecución. Los tiempos tomados para ellas son 5, 7, 3, 11 y 2.
+Para esta prueba utilizamos el lote de tareas \textbf{ej8lote1}, utilizando solamente las del tipo TaskCPU dado que es la única que se puede correr en los scheluders de tipo \emph{SJF} y \emph{RSJF}, así se puede realizar una comparación veraz entre todos. Estas son lanzadas en al mismo tiempo a los schedulers al comienzo de la ejecución. Los tiempos tomados para ellas son 5, 7, 3, 11 y 2.
 
 La cantidad de cores utilizados en este caso es de uno. Y, en el caso de \emph{Round Robin} y \emph{RSJF}, el quantum dado es 3.
 
@@ -174,7 +174,7 @@ Al aumentar un core, podemos comprobar que la performance de cada scheduler mejo
 
 \subsection{Segunda Prueba}
 
-Para esta prueba utilizamos el lote de tareas \textbf{ej8lote1}, en donde estas son lanzadas con una diferencia de dos ticks desde el comienzo de la ejecución. Los tiempos tomados para ellas son los mismos que los utilizados la prueba anterior.
+Para esta prueba utilizamos el lote de tareas \textbf{ej8lote2}, utilizando las mismas tareas sólo que estas son lanzadas con una diferencia de dos ticks desde el comienzo de la ejecución. Esto se realizo para poder comparar la performance de los distintos schedulers tanto con tareas que ingresan simultaneamente como tareas que llegan en distinto momento como en este caso.
 
 En esta prueba, como la anterior, comenzamos utilizando un core por scheduler y, para los schedulers \emph{Round Robin} y \emph{RSJF}, el quantum dado es 3.
 
@@ -226,7 +226,7 @@ Los gráficos obtenidos son:
 		\hline
 		\textbf{FCFS} & \textbf{Round Robin} & \textbf{SJF} & \textbf{RSJF} \\
 		\hline
-		16,6 & 9,6 & 10 & 10 \\
+		16,6 & 9,6 & 10 & 10,2 \\
 		\hline
 	\end{tabular}
 \end{center}
@@ -347,6 +347,32 @@ La latencia entre los schedulers fue similar entre los cuatro schedulers, con un
 Sobre waiting time, \textbf{Round Robin} mantuvo la peor performance pero \textbf{FCFS} pudo igualar a la mejor performance que la tenía \textbf{SJF} y esto se debe a lo comentado, que se vayan encolando procesos a medida que van corriendo otros genera menor tiempo de espera.
 
 En el tiempo total de ejecución promedio también el scheduler \textbf{FCFS} obtuvo una mejora de performance notoria llevándolo a obtener la mejor performance junto con \textbf{SJF}. \textbf{Round Robin} mantuvo la peor performance de esta comparación.
+
+En comparación con la primer prueba podemos notar que en esta se genero una disminución en todos las métricas calculadas, sin embargo se pudo ver que los distintos schedulers se beneficiaron del cambio de distinta manera en cada métrica. En particular podemos ver que el FCFS tan solo disminuyo un 5,69\% su latencia, mientras que los demás tuvieron un cambio de aproximadamente el 20\%, a la vez que el Round Robin y el SJF tuvieron un 20\% menos de waiting time siendo que los otros dos notaron una diferencia de menos del 10\% y el RSFJ tuvo una mejora del 5,94\% del tiempo de ejecución y los demás alredor del 15\% como se puede ver en la siguiente tabla.
+
+\begin{center}
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+		\multicolumn{4}{|c|}{\large{\textbf{Diferencia Porcentual de Latencia Promedio}}} \\
+		\hline
+		\textbf{FCFS} & \textbf{Round Robin} & \textbf{SJF} & \textbf{RSJF} \\
+		\hline
+		5,69\% & 20\% & 21,88\% & 21,54\% \\
+		\hline
+		\multicolumn{4}{|c|}{\large{\textbf{Diferencia Porcentual de Waiting Time Promedio}}} \\
+		\hline
+		\textbf{FCFS} & \textbf{Round Robin} & \textbf{SJF} & \textbf{RSJF} \\
+		\hline
+		5,69\% &	 19,54\% & 21,875\% & 7,78\% \\
+		\hline
+		\multicolumn{4}{|c|}{\large{\textbf{Diferencia Porcentual de Tiempo Total De Ejecución Promedio}}} \\
+		\hline
+		\textbf{FCFS} & \textbf{Round Robin} & \textbf{SJF} & \textbf{RSJF} \\
+		\hline
+		17,25\% & 14,75\% &	15,22\% & 5,94\% \\
+		\hline
+	\end{tabular}
+\end{center}
 
 \subsection{Comentarios Finales}
 
