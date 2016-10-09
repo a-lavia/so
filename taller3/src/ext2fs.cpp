@@ -6,6 +6,13 @@
 #include <cstring>
 #include <iostream>
 
+unsigned int* linear_search(unsigned int block_number, 
+								   unsigned int first_number, 
+								   unsigned int* block, 
+								   unsigned int* indirection_block_number,
+								   bool triple);
+
+
 Ext2FS::Ext2FS(HDD & disk, unsigned char pnumber) : _hdd(disk), _partition_number(pnumber)
 {
 	assert(pnumber <= 3);
@@ -280,13 +287,81 @@ unsigned int Ext2FS::blockaddr2sector(unsigned int block)
  */
 struct Ext2FSInode * Ext2FS::load_inode(unsigned int inode_number)
 {
+	struct Ext2FSSuperblock* super_block = superblock();
 
+	// Con esto determino en que block group está el inodo.
+	unsigned int inode_block_group_number = blockgroup_for_inode(inode_number);
+
+	// Determino el indice del inodo dentro del block group
+	unsigned int inode_idx = blockgroup_inode_index(inode_number);
+
+	// Obtengo el block group
+	struct Ext2FSBlockGroupDescriptor* inode_block_group_struct = block_group(inode_block_group_number);
+
+	// Obtengo la tabla de inodos
+	(struct Ext2FSInode*) inode_table = (struct Ext2FSInode*) inode_block_group_struct->inode_table;
+
+	return &(inode_table[inode_idx]);
 }
 
 unsigned int Ext2FS::get_block_address(struct Ext2FSInode * inode, unsigned int block_number)
 {
+	// Tamaño del bloque es de 512 Bytes.
+	// 512B/4B = 128
 
+	//CAMBIAR ESE 128  _¡^¡_
+
+	if(block_number < 12){
+		return &(inode->block[block_number]);
+
+	} else if (block_number < 140){ // Indirecto
+		unsigned int* indirecto = *(inode->block[12]);
+		return &(indirecto[block_number - 12]);
+
+	} else if (block_number < 16244) { // Indirección Doble
+		unsigned int indirect_double_block_number;
+		unsigned int* indirect_double_second_block = linear_search(block_number, 140, &(inode->block[13]), &indirect_double_block_number, false);
+		return &(indirect_double_second_block[128*indirect_double_block_number-block_number+1]);
+
+	} else { // Indirección Triple
+		unsigned int indirect_triple_third_block_number;
+		unsigned int* indirect_triple_third_block = linear_search(block_number, 16244, &(inode->block[14]), &indirect_triple_third_block_number, true);
+
+		unsigned int indirect_triple_second_block_number;
+		unsigned int* indirect_triple_second_block = linear_search(block_number, 16244 + indirect_triple_third_block_number*128*128, indirect_triple_third_block, & indirect_triple_second_block_number, false);
+
+		return &(indirect_triple_second_block[128*128*indirect_triple_second_block_number-block_number+1]);
+
+	}
 }
+
+/*********************************************************************************************************************************************/
+
+unsigned int* linear_search(unsigned int block_number, 
+								   unsigned int first_number, 
+								   unsigned int* block, 
+								   unsigned int* indirection_block_number,
+								   bool triple){
+	unsigned int res_pointer;
+	unsigned int j = 200;
+	unsigned int val;
+	unsigned int t = triple ? 128 : 1;
+
+	for(int i = 0; i < 128; i++){
+		val = i * 128 * t + first_number + 127;
+		if(block_number <= val){
+			j = i;
+			*indirection_block_number = i;
+			break;
+		}
+	}
+
+	assert(0 <= j && j < 128);
+
+	return &(block[j]);
+}
+
+/*********************************************************************************************************************************************/
 
 void Ext2FS::read_block(unsigned int block_address, unsigned char * buffer)
 {
@@ -302,6 +377,9 @@ struct Ext2FSInode * Ext2FS::get_file_inode_from_dir_inode(struct Ext2FSInode * 
 		from = load_inode(EXT2_RDIR_INODE_NUMBER);
 	//std::cerr << *from << std::endl;
 	assert(INODE_ISDIR(from));
+
+
+	
 
 }
 
