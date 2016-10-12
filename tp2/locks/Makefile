@@ -2,12 +2,12 @@ CC = g++
 CFLAGS = -g -Wall -Werror -std=c++11
 LDFLAGS = -pthread
 
-BINARIES = RWLockTestCuatriPasado
+BINARIES = test
 
 all: $(BINARIES)
 
-RWLock: 
-	$(CC) $(LDFLAGS) $(CFLAGS) RWLockTestCuatriPasado.cpp RWLock.cpp -o RWLockTestCuatriPasado
+test:
+	$(CC) $(LDFLAGS) $(CFLAGS) test.cpp RWLock.cpp -o $(BINARIES)
 
 clean:
 	rm -f *.o
