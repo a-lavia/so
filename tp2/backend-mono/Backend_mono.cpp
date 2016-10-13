@@ -2,15 +2,24 @@
 
 using namespace std;
 
+//
+#include <queue>
+#define CANT_JUGADORES 5
+
 // variables globales de la conexión
 int socket_servidor = -1;
 
 // variables globales del juego
 vector<vector<char> > tablero_temporal; // tiene cartas que aún no están confirmadas
 vector<vector<char> > tablero_confirmado; // solamente tiene las cartas confirmadas
+
 unsigned int ancho = -1;
 unsigned int alto = -1;
 
+queue<int> jugadores_id_libres;
+
+pthread_t thread[CANT_JUGADORES];
+int sockets_fd[CANT_JUGADORES];
 
 bool cargar_int(const char* numero, unsigned int& n) {
     char *eptr;
@@ -75,10 +84,13 @@ int main(int argc, const char* argv[]) {
     }
 
     // escuchar en el socket
-    if (listen(socket_servidor, 1) == -1) {
+    if (listen(socket_servidor, 10) == -1) {
         cerr << "Error escuchando socket!" << endl;
         return 1;
     }
+
+    for(int i = 0; i<CANT_JUGADORES; i++)
+      jugadores_id_libres.push(i);
 
     // aceptar conexiones entrantes.
     socket_size = sizeof(remoto);
@@ -86,29 +98,35 @@ int main(int argc, const char* argv[]) {
         if ((socketfd_cliente = accept(socket_servidor, (struct sockaddr*) &remoto, (socklen_t*) &socket_size)) == -1)
             cerr << "Error al aceptar conexion" << endl;
         else {
-            close(socket_servidor);
-            atendedor_de_jugador(socketfd_cliente);
+            int jugador_id = jugadores_id_libres.front();
+            jugadores_id_libres.pop();
+            sockets_fd[jugador_id] = socketfd_cliente;
+            pthread_create(&thread[jugador_id], NULL, nuevo_jugador, &jugador_id);
         }
     }
-
 
     return 0;
 }
 
+void* nuevo_jugador(void* param) {
+  int jugador_id = *((int*) param);
+  atendedor_de_jugador(jugador_id);
+  return NULL;
+}
 
-void atendedor_de_jugador(int socket_fd) {
+void atendedor_de_jugador(int jugador_id) {
     // variables locales del jugador
     char nombre_jugador[21];
     list<Casillero> jugada_actual; // lista de cartas aún no confirmadas del jugador
 
-    if (recibir_nombre(socket_fd, nombre_jugador) != 0) {
+    if (recibir_nombre(jugador_id, nombre_jugador) != 0) {
         // el cliente cortó la comunicación, o hubo un error. Cerramos todo.
-        terminar_servidor_de_jugador(socket_fd, jugada_actual);
+        terminar_servidor_de_jugador(jugador_id, jugada_actual);
     }
 
-    if (enviar_dimensiones(socket_fd) != 0) {
+    if (enviar_dimensiones(jugador_id) != 0) {
         // se produjo un error al enviar. Cerramos todo.
-        terminar_servidor_de_jugador(socket_fd, jugada_actual);
+        terminar_servidor_de_jugador(jugador_id, jugada_actual);
     }
 
     cout << "Esperando que juegue " << nombre_jugador << endl;
@@ -117,7 +135,7 @@ void atendedor_de_jugador(int socket_fd) {
 
         // espera una carta o la confirmación de la jugada
         char mensaje[MENSAJE_MAXIMO+1];
-        int comando = recibir_comando(socket_fd, mensaje);
+        int comando = recibir_comando(jugador_id, mensaje);
         if (comando == MSG_CARTA) {
 
             Casillero ficha;
@@ -132,17 +150,17 @@ void atendedor_de_jugador(int socket_fd) {
                 jugada_actual.push_back(ficha);
                 tablero_temporal[ficha.fila][ficha.columna] = ficha.contenido;
                 // OK
-                if (enviar_ok(socket_fd) != 0) {
+                if (enviar_ok(jugador_id) != 0) {
                     // se produjo un error al enviar. Cerramos todo.
-                    terminar_servidor_de_jugador(socket_fd, jugada_actual);
+                    terminar_servidor_de_jugador(jugador_id, jugada_actual);
                 }
             }
             else {
                 quitar_cartas(jugada_actual);
                 // ERROR
-                if (enviar_error(socket_fd) != 0) {
+                if (enviar_error(jugador_id) != 0) {
                     // se produjo un error al enviar. Cerramos todo.
-                    terminar_servidor_de_jugador(socket_fd, jugada_actual);
+                    terminar_servidor_de_jugador(jugador_id, jugada_actual);
                 }
             }
         }
@@ -153,15 +171,15 @@ void atendedor_de_jugador(int socket_fd) {
             }
             jugada_actual.clear();
 
-            if (enviar_ok(socket_fd) != 0) {
+            if (enviar_ok(jugador_id) != 0) {
                 // se produjo un error al enviar. Cerramos todo.
-                terminar_servidor_de_jugador(socket_fd, jugada_actual);
+                terminar_servidor_de_jugador(jugador_id, jugada_actual);
             }
         }
         else if (comando == MSG_UPDATE) {
-            if (enviar_tablero(socket_fd) != 0) {
+            if (enviar_tablero(jugador_id) != 0) {
                 // se produjo un error al enviar. Cerramos todo.
-                terminar_servidor_de_jugador(socket_fd, jugada_actual);
+                terminar_servidor_de_jugador(jugador_id, jugada_actual);
             }
         }
         else if (comando == MSG_INVALID) {
@@ -170,7 +188,7 @@ void atendedor_de_jugador(int socket_fd) {
         }
         else {
             // se produjo un error al recibir. Cerramos todo.
-            terminar_servidor_de_jugador(socket_fd, jugada_actual);
+            terminar_servidor_de_jugador(jugador_id, jugada_actual);
         }
     }
 }
@@ -178,10 +196,10 @@ void atendedor_de_jugador(int socket_fd) {
 
 // mensajes recibidos por el server
 
-int recibir_nombre(int socket_fd, char* nombre) {
+int recibir_nombre(int jugador_id, char* nombre) {
     char buf[MENSAJE_MAXIMO+1];
 
-    if (recibir(socket_fd, buf) != 0) {
+    if (recibir(sockets_fd[jugador_id], buf) != 0) {
         return -1;
     }
 
@@ -196,8 +214,8 @@ int recibir_nombre(int socket_fd, char* nombre) {
 }
 
 // informa el tipo de comando recibido (CARTA, CONFIRMO, UPDATE o si es inválido) y deja el mensaje en mensaje por si necesita seguir parseando
-int recibir_comando(int socket_fd, char* mensaje) {
-    if (recibir(socket_fd, mensaje) != 0) {
+int recibir_comando(int jugador_id, char* mensaje) {
+    if (recibir(sockets_fd[jugador_id], mensaje) != 0) {
         return -1;
     }
 
@@ -237,13 +255,13 @@ int parsear_casillero(char* mensaje, Casillero& ficha) {
 
 // mensajes enviados por el server
 
-int enviar_dimensiones(int socket_fd) {
+int enviar_dimensiones(int jugador_id) {
     char buf[MENSAJE_MAXIMO+1];
     sprintf(buf, "TABLERO %d %d", ancho, alto);
-    return enviar(socket_fd, buf);
+    return enviar(sockets_fd[jugador_id], buf);
 }
 
-int enviar_tablero(int socket_fd) {
+int enviar_tablero(int jugador_id) {
     char buf[MENSAJE_MAXIMO+1];
     sprintf(buf, "STATUS ");
     int pos = 7;
@@ -256,19 +274,19 @@ int enviar_tablero(int socket_fd) {
     }
     buf[pos] = 0; //end of buffer
 
-    return enviar(socket_fd, buf);
+    return enviar(sockets_fd[jugador_id], buf);
 }
 
-int enviar_ok(int socket_fd) {
+int enviar_ok(int jugador_id) {
     char buf[MENSAJE_MAXIMO+1];
     sprintf(buf, "OK");
-    return enviar(socket_fd, buf);
+    return enviar(sockets_fd[jugador_id], buf);
 }
 
-int enviar_error(int socket_fd) {
+int enviar_error(int jugador_id) {
     char buf[MENSAJE_MAXIMO+1];
     sprintf(buf, "ERROR");
-    return enviar(socket_fd, buf);
+    return enviar(sockets_fd[jugador_id], buf);
 }
 
 
@@ -281,14 +299,21 @@ void cerrar_servidor(int signal) {
     exit(EXIT_SUCCESS);
 }
 
-void terminar_servidor_de_jugador(int socket_fd, list<Casillero>& jugada_actual) {
+void terminar_servidor_de_jugador(int jugador_id, list<Casillero>& jugada_actual) {
     cout << "Se interrumpió la comunicación con un cliente" << endl;
 
-    close(socket_fd);
+    //Termino el socket del jugador actual
+    close(sockets_fd[jugador_id]);
 
+    //Devuelvo a la cola de IDs libres el actual jugador
+    jugadores_id_libres.push(jugador_id);
+
+    //Quito las cartas
     quitar_cartas(jugada_actual);
 
-    exit(-1);
+    //Termino el trhead
+    pthread_exit(NULL);
+
 }
 
 
@@ -386,4 +411,3 @@ bool puso_carta_en(unsigned int fila, unsigned int columna, const list<Casillero
     // si no encontró
     return false;
 }
-
