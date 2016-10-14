@@ -15,10 +15,10 @@
 #include <vector>
 #include <iostream>
 #include <list>
-#include <queue>
+// #include <queue>
 #include "../locks/RWLock.h"
 
-#define CANT_JUGADORES 5
+// #define CANT_JUGADORES 5
 
 #define PORT 5481
 
