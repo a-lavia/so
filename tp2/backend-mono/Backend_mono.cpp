@@ -335,7 +335,7 @@ void quitar_cartas(list<Casillero>& jugada_actual) {
         
         lock_tablero_temporal.wlock();
         tablero_temporal[casillero->fila][casillero->columna] = VACIO;
-        lock_tablero_temporal.wlock();
+        lock_tablero_temporal.wunlock();
     }
     jugada_actual.clear();
 }
