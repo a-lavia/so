@@ -11,14 +11,8 @@ vector<vector<char> > tablero_confirmado; // solamente tiene las cartas confirma
 unsigned int ancho = -1;
 unsigned int alto = -1;
 
-// queue<int> jugadores_id_libres;
-
-// pthread_t thread[CANT_JUGADORES];
-// int sockets_fd[CANT_JUGADORES];
-
 RWLock lock_tablero_temporal;
 RWLock lock_tablero_confirmado;
-// RWLock lock_jugadores_id_libres;
 
 
 bool cargar_int(const char* numero, unsigned int& n) {
@@ -89,21 +83,13 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    // for(int i = 0; i<CANT_JUGADORES; i++)
-    //   jugadores_id_libres.push(i);
-
     // aceptar conexiones entrantes.
     socket_size = sizeof(remoto);
     while (true) {
         if ((socketfd_cliente = accept(socket_servidor, (struct sockaddr*) &remoto, (socklen_t*) &socket_size)) == -1)
             cerr << "Error al aceptar conexion" << endl;
         else {
-            // lock_jugadores_id_libres.wlock();
-            // int socket_fd = jugadores_id_libres.front();
-            // jugadores_id_libres.pop();
-            // lock_jugadores_id_libres.wunlock();
 
-            // sockets_fd[socket_fd] = socketfd_cliente;
             pthread_t nuevo_thread;
             pthread_create(&nuevo_thread, NULL, nuevo_jugador, &socketfd_cliente);
         }
@@ -316,11 +302,6 @@ void terminar_servidor_de_jugador(int socket_fd, list<Casillero>& jugada_actual)
 
     //Termino el socket del jugador actual
     close(socket_fd);
-
-    //Devuelvo a la cola de IDs libres el actual jugador
-    // lock_jugadores_id_libres.wlock();
-    // jugadores_id_libres.push(socket_fd);
-    // lock_jugadores_id_libres.wunlock();
 
     //Quito las cartas
     quitar_cartas(jugada_actual);
