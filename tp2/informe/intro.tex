@@ -1,0 +1,5 @@
+\section{Introducción}
+
+En el presente informe reseñamos las mejoras que realizamos al servidor del juego de \textit{HaSObro} para que tener múltiples jugadores a la vez. Para esto, utilizamos la biblioteca \textbf{PTHREADS} de POSIX para realizar los cambios en el servidor de \textit{backend} así pueda atender a múltiples jugadores.
+
+Como primera parte del mismo, exponemos la implementación de la estructura \textit{Read-Write lock}, donde se utilizan sólo variables de condición de la librería POSIX, y los respectivos test que demuestran que la estructura está libre de inanición y posée el comportamiento esperado. Como segunda parte, presentamos una implementación del servidor de \textit{backend multithreaded} con los detalles implementativos y las decisiónes de diseño del mismo que hacen que permita múltiples clientes jugando simultáneamente.
