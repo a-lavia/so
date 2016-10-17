@@ -1,4 +1,4 @@
-#include "Backend_mono.h"
+#include "Backend_multi.h"
 
 
 // variables globales de la conexión
@@ -160,11 +160,11 @@ void atendedor_de_jugador(int socket_fd) {
         }
         else if (comando == MSG_CONFIRMO) {
             // las cartas acumuladas conforman una jugada completa, escribirlas en el tablero y borrar las cartas temporales
+            lock_tablero_confirmado.wlock();
             for (list<Casillero>::const_iterator casillero = jugada_actual.begin(); casillero != jugada_actual.end(); casillero++) {
-                lock_tablero_confirmado.wlock();
                 tablero_confirmado[casillero->fila][casillero->columna] = casillero->contenido;
-                lock_tablero_confirmado.wunlock();
             }
+            lock_tablero_confirmado.wunlock();
             jugada_actual.clear();
 
             if (enviar_ok(socket_fd) != 0) {
@@ -261,15 +261,15 @@ int enviar_tablero(int socket_fd) {
     char buf[MENSAJE_MAXIMO+1];
     sprintf(buf, "STATUS ");
     int pos = 7;
+    lock_tablero_confirmado.rlock();
     for (unsigned int fila = 0; fila < alto; ++fila) {
         for (unsigned int col = 0; col < ancho; ++col) {
-            lock_tablero_confirmado.rlock();
             char contenido = tablero_confirmado[fila][col];
-            lock_tablero_confirmado.runlock();
             buf[pos] = (contenido == VACIO)? '-' : contenido;
             pos++;
         }
     }
+    lock_tablero_confirmado.runlock();
     buf[pos] = 0; //end of buffer
 
     return enviar(socket_fd, buf);
@@ -313,12 +313,11 @@ void terminar_servidor_de_jugador(int socket_fd, list<Casillero>& jugada_actual)
 
 
 void quitar_cartas(list<Casillero>& jugada_actual) {
+    lock_tablero_temporal.wlock();
     for (list<Casillero>::const_iterator casillero = jugada_actual.begin(); casillero != jugada_actual.end(); casillero++) {
-        
-        lock_tablero_temporal.wlock();
         tablero_temporal[casillero->fila][casillero->columna] = VACIO;
-        lock_tablero_temporal.wunlock();
     }
+    lock_tablero_temporal.wunlock();
     jugada_actual.clear();
 }
 
@@ -336,7 +335,7 @@ bool es_ficha_valida_en_jugada(const Casillero& ficha, const list<Casillero>& ju
         lock_tablero_temporal.runlock();
         return false;
     }
-
+    
     lock_tablero_temporal.runlock();
 
     if (jugada_actual.size() > 0) {
@@ -356,15 +355,15 @@ bool es_ficha_valida_en_jugada(const Casillero& ficha, const list<Casillero>& ju
             }
 
             int paso = distancia_horizontal / abs(distancia_horizontal);
+            lock_tablero_confirmado.rlock();
             for (unsigned int columna = mas_distante.columna; columna != ficha.columna; columna += paso) {
                 // el casillero DEBE estar ocupado en el tablero de jugadas confirmadas
-                lock_tablero_confirmado.rlock();
                 if (!(puso_carta_en(ficha.fila, columna, jugada_actual)) && tablero_confirmado[ficha.fila][columna] == VACIO) {
                     lock_tablero_confirmado.runlock();
                     return false;
                 }
-                lock_tablero_confirmado.runlock();
             }
+            lock_tablero_confirmado.runlock();
 
         } else if (distancia_horizontal == 0) {
             // la jugada es vertical
@@ -376,15 +375,15 @@ bool es_ficha_valida_en_jugada(const Casillero& ficha, const list<Casillero>& ju
             }
 
             int paso = distancia_vertical / abs(distancia_vertical);
+            lock_tablero_confirmado.rlock();
             for (unsigned int fila = mas_distante.fila; fila != ficha.fila; fila += paso) {
                 // el casillero DEBE estar ocupado en el tablero de jugadas confirmadas
-                lock_tablero_confirmado.rlock();
                 if (!(puso_carta_en(fila, ficha.columna, jugada_actual)) && tablero_confirmado[fila][ficha.columna] == VACIO) {
                     lock_tablero_confirmado.runlock();
                     return false;
                 }
-                lock_tablero_confirmado.runlock();
             }
+            lock_tablero_confirmado.runlock();
         }
         else {
             // no están alineadas ni horizontal ni verticalmente

@@ -1,5 +1,5 @@
-#ifndef Backend_mono_h
-#define Backend_mono_h
+#ifndef Backend_multi_h
+#define Backend_multi_h
 
 
 #include "Encabezado.h"

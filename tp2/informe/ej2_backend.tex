@@ -28,16 +28,26 @@ El cambio más importante para darle soporte multiusuario al backend radica en e
 
 La siguiente cuestión a resolver para mantener la correcta sincronización entre los hilos y estar libres de condiciones de carrera, fue determinar las zonas críticas del servidor. El servidor cuenta con dos variables globales compartidas por todos los threads, estas son \textit{tablero\_temporal} y \textit{tablero\_confirmado}. Estas variables son leídas y escritas con las distintas acciones de los clientes, por lo tanto estas serán nuestras secciones críticas a las cuales debemos garantizar el acceso exclusivo para mantener la coherencia. Esto lo hacemos aprovechando los mecanismos provistos por la clase implementada anteriormente \textbf{RWLock}, así que agregamos dos instancias globales de esta clase, \textit{lock\_tablero\_temporal} y \textit{lock\_tablero\_confirmado} con el fin de garantizar el acceso exclusivo a las secciones críticas. Vamos a listar las funciones del juego con los cambios efectuados:
 
+
+\subsubsection{Función Atender Jugador}
 \begin{itemize}
-	\item Atender jugador:
-		\begin{itemize}
-			\item Colocar una carta: En esta operación estamos modificando el tablero temporal con la carta colocada, solicitamos el \textit{write-lock} del tablero temporal, efectuamos el cambio, y luego lo liberamos \textit{write-unlock}.
-			\item Confirmar jugada: Necesitamos escribir en el tablero confirmado la jugada del cliente pedimos \textit{write-lock} en el tablero confirmado por cada escritura realizada de la jugada y al finalizar liberamos \textit{write-unlock}.
-		\end{itemize}
-	\item Enviar tablero: Enviamos el tablero confirmado a un cliente y para eso leemos el tablero confirmado, así que solicitamos el \textit{read-lock}, efecutamos la lectura y luego hacemos un \textit{read-unlock} 
-	\item Quitar cartas: El tablero temporal debe ser limpiado, se debe escribir en todas sus coordenadas, por ello realizamos un \textit{write-lock}, limpiamos la coordenada y luego un \textit{write-unlock}.
-	\item Es ficha valida: En esta operación comprobamos si una jugada es válida, para ello debemos leer tanto el tablero temporal como el tablero confirmado, solicitamos con sus respectivas instancias de \textbf{RWLock} el \textit{read-lock} cada vez que el casillero necesite ser leído, luego lo liberamos con \textit{read-unlock}
+	\item Colocar una carta: En esta operación estamos modificando el tablero temporal con la carta colocada, solicitamos el \textit{write-lock} del tablero temporal, efectuamos el cambio, y luego lo liberamos \textit{write-unlock}.
+	\item Confirmar jugada: Necesitamos escribir en el tablero confirmado la jugada del cliente por ello pedimos \textit{write-lock} en el tablero confirmado y una vez obtenido pasamos la totalidad de la jugada al tablero y al finalizar liberamos \textit{write-unlock}. Realizamos esto de esta forma para garantizar el acceso exclusivo mientras se esta confirmando la jugada, ya que de no hacerlo podemos tener condiciones de carrera.
 \end{itemize}
 
-Finalmente, luego de garantizar el acceso exclusivo a las secciones críticas, sólo nos queda finalizar el thread cuando el cliente términe su conexión con el servidor, para ello agregamos en la rutina encargada de terminar el cliente un llamado a \textbf{pthread\_exit} que indica que el hilo actual ha finalizado.
 
+\subsubsection{Función Enviar Tablero}
+
+Enviamos el tablero confirmado a un cliente y para eso leemos el tablero confirmado, así que solicitamos el \textit{read-lock}, efecutamos la lectura de todo el tablero y luego hacemos un \textit{read-unlock} para liberarlo. Nuevamente, la operación debe realizarse exclusivamente al leer todo el tablero para evitar que otros clientes puedan escribirlo mientras se esta enviando. 
+
+\subsubsection{Función Quitar Cartas}
+
+El tablero temporal debe ser limpiado, se debe escribir en todas sus coordenadas, por ello realizamos un \textit{write-lock}, limpiamos todas las coordenadas y luego un \textit{write-unlock} al finalizar.
+
+\subsubsection{Función Es Ficha Valida en Jugada}
+
+En esta operación comprobamos si una jugada es válida, para ello debemos leer tanto el tablero temporal como el tablero confirmado, solicitamos con sus respectivas instancias de \textbf{RWLock} el \textit{read-lock} al efectuar la lectura tanto filas como columnas, y luego lo liberamos con \textit{read-unlock}.
+
+\subsubsection{Función Terminar Servidor de Jugador}
+
+Por último, luego de garantizar el acceso exclusivo a las secciones críticas, sólo nos queda finalizar el thread cuando el cliente términe su conexión con el servidor, para ello agregamos en esta rutina encargada de terminar el cliente un llamado a \textbf{pthread\_exit} que indica que el hilo actual ha finalizado.
