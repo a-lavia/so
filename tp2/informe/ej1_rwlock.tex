@@ -1,8 +1,6 @@
 \section{Implementación \textit{Read-Write Lock}}
 
-Aquí presentamos nuestra implementación del \textit{Read-Write Lock} donde exponemos su estructura y su funcionamiento.
-
-En ésta se podría generar el problema de inanición si se presentan los casos en donde haya siempre pedidos de lectura o escritura, al intentar realizar un pedido contrario a estos según el caso éste queda bloqueado. Por ello, también presentamos las medidas tomadas para evitar estos casos.
+Aquí presentamos nuestra implementación del \textit{Read-Write Lock} donde exponemos su estructura y su funcionamiento. En ésta se podría generar el problema de inanición si se presentan los casos en donde haya siempre pedidos de lectura o escritura, al intentar realizar un pedido contrario a estos según el caso éste queda bloqueado. Por ello, también presentamos las medidas tomadas para evitar estos casos.
 
 
 \subsection{Estructura}
@@ -36,7 +34,7 @@ Aumento en uno el contador de la cantidad de lectores
 Libero el mutex
 \end{lstlisting}
 
-Lo que primero realiza esta función se pide el mutex. Una vez obtenido el mismo se fija si la cantidad de escritores es mayor que cero, si lo es se espera al proximo turno. Esto se hace para parar una posible seguidilla de pedidos de lectura que produzcan inanición a los threads que pidan una lectura.
+Lo primero realiza esta función es pedir el mutex. Una vez obtenido el mismo, se fija si la cantidad de escritores es mayor que cero y, si lo es, espera al proximo turno. Esto se hace para parar una posible seguidilla de pedidos de lectura que produzcan inanición a los threads que pidan una lectura.
 
 Luego, mientras haya algún thread escribiendo se espera hasta el proximo turno. Esto se hace para garantizar el acceso exclusivo a la sección critica.
 
@@ -61,7 +59,7 @@ Libero el mutex
 
 Primero se pide el mutex. Una vez obtenido el mismo se aumenta el contador de la cantidad de escritores en uno.
 
-Luego, mientras haya alguien escribiendo o la cantidad de lectores es mayor que cero espera al proximo turno. Esto se hace para garantizar el acceso exclusivo a la sección critica ya que si alguien está escribiendo no debería acceder otro para escribir y también que se escriba solamente cuando nadie esté leyendo.
+Luego, mientras haya alguien escribiendo o leyendo, espera al proximo turno. Esto se hace para garantizar el acceso exclusivo a la sección critica ya que si alguien está escribiendo no debería acceder otro para escribir y, también, para que se escriba solamente cuando nadie esté leyendo.
 
 Una vez que no haya nadie escribiendo ni leyendo, se levanta el flag de escritura y se libera el mutex.
 
@@ -118,7 +116,7 @@ Para mostrar que en la estructura no se genería deadlock veamos que no se cumpl
 \begin{itemize}
 	\item \textbf{Exclusión mutua}: Un recurso no puede estar asignado a más de un proceso. 
 \newline
-	Cómo vimos, todas las operaciones de la estructura como primera medida realizan un lock con el mutex, esto garantiza que el acceso a un recurso le pertenece a un sólo thread y todos los que quieran utilizarlo esperan hasta que el que lo está utilizando realice un unlock.
+	Cómo vimos, todas las operaciones como primera medida realizan un lock con el mutex, esto garantiza que el acceso a un recurso le pertenece a un sólo thread y todos los que quieran utilizarlo esperan hasta que el que lo está utilizando realice un unlock. Si se cae en una variable de condición se liberan los mutex pero todos los threads caerían también en la misma variable de condición y éstas están dentro de ciclos donde, si se quere escribir se espera a que terminen de escribir y que hayan leído los lectores, o si se quiere leer que terminen de escribir. Entonces los lectores son los únicos que podrían entrar varios a la vez pero no modificarían las variables, en cambio los que quieren escribir tienen acceso exclusivo.
 
 	\item \textbf{Hold and wait}: Los procesos que ya tienen algún recurso pueden solicitar otro.
 \newline
