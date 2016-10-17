@@ -49,12 +49,12 @@ void RWLock :: wlock() {
 	// Agrego un escritor más a la espera.
 	this->writers++;
 
-	// Espero mientras hay alguien escribiendo o leyendo
+	// Espero mientras hay alguien escribiendo o la cantidad 
+	// de lectores es mayor que cero
 	while(this->writing > 0 || this->reading > 0)
 		pthread_cond_wait(&this->turn, &this->m);
 
-	// Sección critica, thread tiene acceso único
-	// Aquí es el único que escribe.
+	// Sección critica - Aquí es el único que escribe
 	this->writing++;
 
 	pthread_mutex_unlock(&this->m);

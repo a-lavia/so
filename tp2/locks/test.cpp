@@ -116,13 +116,13 @@ int testMitadEscritoresMitadLectores(){
 
 	// En los i pares se encuentra la cantidad de threads escritores hasta el momento que el
 	// thread lector leyo, y viceversa para los i impares.
-	// Consideramos que si el rango i-15 <= array_test_1[i] <= i+15 es falso hay deadlock. Siendo i el nro de thread.
+	// Consideramos que si el rango i-15 <= array_test_1[i] <= i+15 es falso hay inanición. Siendo i el nro de thread.
 	// Si el i es par y (i-15 > array_test_1[i]) quiere decir que tarda mucho en leer y tienen mas prioridad los escritores
 	// Si el i es par y (array_test_1[i] > i+15) quiere decir que se tarda mucho en escribir y tienen mas prioridad los lectores
 	// Viceversa si i es impar
 	for(i = 0; i < CANT_THREADS; i++){
 		if(i-15 > array_test_1[i] && array_test_1[i] > i+15){
-			cout << "ERROR! Deadlock en test 1." << endl;
+			cout << "ERROR! Inanición en test 1." << endl;
 			return -1;
 		}
 	}
@@ -155,14 +155,14 @@ int testMasEscritoresQueLectores(){
 
 
 	// Consideramos que si, siendo j = nro thread, j-15 <= writers_hasta_reader_test_2[j] <= j+15 el rango
-	// es falso hay deadlock.
+	// es falso hay inanición.
 	// O sea, que si cuando fue lanzado el thread y llega a leer tienen que haber escrito cant. de
 	// threads en ese rango.
-	// Si hay más que el rango hay deadlock (tardaría en leer porque tienen más prioridad los escritores)
-	// Si hay menos que el rango también hay deadlock (los lectores tienen más prioridad que los escritores)
+	// Si hay más que el rango hay inanición (tardaría en leer porque tienen más prioridad los escritores)
+	// Si hay menos que el rango también hay inanición (los lectores tienen más prioridad que los escritores)
 	for(i = 0; i < CANT_THREADS; i++){
 		if(i % 10 == 0 && i-15 > writers_hasta_reader_test_2[i] && writers_hasta_reader_test_2[i] > i+15){
-			cout << "ERROR! Deadlock en test 2." << endl;
+			cout << "ERROR! Inanición en test 2." << endl;
 			return -1;
 		}
 	}
@@ -202,14 +202,14 @@ int testMasLectoresQueEscritores(){
 		pthread_join(threads[i], NULL);
 
 
-	// Consideramos que si, siendo j = nro thread, j-15 <= writers_hasta_reader_test_2[j] <= j+15 hay deadlock
+	// Consideramos que si, siendo j = nro thread, j-15 <= writers_hasta_reader_test_2[j] <= j+15 hay inanición
 	// O sea, que si cuando fue lanzado el thread y llega a leer tienen que haber leído cant. de
 	// threads en ese rango.
-	// Si hay más que el rango hay deadlock (tardaría en escribir porque tienen más prioridad los lectores)
-	// Si hay menos que el rango también hay deadlock (los escritores tienen más prioridad que los lectores)
+	// Si hay más que el rango hay inanición (tardaría en escribir porque tienen más prioridad los lectores)
+	// Si hay menos que el rango también hay inanición (los escritores tienen más prioridad que los lectores)
 	for(int j = 0; j < CANT_THREADS; j++){
 		if(i % 10 == 0 && j-15 > readers_hasta_writer_test_3[j] && writers_hasta_reader_test_2[j] > j+15){
-			cout << "ERROR! Deadlock en test 3." << endl;
+			cout << "ERROR! Inanición en test 3." << endl;
 			return -1;
 		}
 	}
