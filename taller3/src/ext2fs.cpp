@@ -1,3 +1,4 @@
+
 #include "ext2fs.h"
 #include "hdd.h"
 #include "pentry.h"
@@ -307,61 +308,72 @@ struct Ext2FSInode * Ext2FS::load_inode(unsigned int inode_number)
 unsigned int Ext2FS::get_block_address(struct Ext2FSInode * inode, unsigned int block_number)
 {
 	// Tamaño del bloque es de 512 Bytes.
-	// 512B/4B = 128
+	
+	unsigned int block_size = 1024 << _superblock->log_block_size;
 
-	//CAMBIAR ESE 128  _¡^¡_
+	// 512B / 4B = 128 pos
+	unsigned int cant_pos_en_bloque = block_size / sizeof(unsigned int);
 
-	if(block_number < 12){
-		return &(inode->block[block_number]);
+	// Los primeros 12 (0 a 11)
+	unsigned int cant_bloques_directos = 12;
 
-	} else if (block_number < 140){ // Indirecto
-		unsigned int* indirecto = *(inode->block[12]);
-		return &(indirecto[block_number - 12]);
+	// Primera indireccion
+	unsigned int cant_bloques_indirectos = cant_pos_en_bloque + 12;
 
-	} else if (block_number < 16244) { // Indirección Doble
-		unsigned int indirect_double_block_number;
-		unsigned int* indirect_double_second_block = linear_search(block_number, 140, &(inode->block[13]), &indirect_double_block_number, false);
-		return &(indirect_double_second_block[128*indirect_double_block_number-block_number+1]);
+	// Indireccion doble
+	unsigned int cant_bloques_indireccion_doble = cant_pos_en_bloque*cant_pos_en_bloque + cant_bloques_indirectos;
 
-	} else { // Indirección Triple
-		unsigned int indirect_triple_third_block_number;
-		unsigned int* indirect_triple_third_block = linear_search(block_number, 16244, &(inode->block[14]), &indirect_triple_third_block_number, true);
+	// Indireccion triple -> es el else
 
-		unsigned int indirect_triple_second_block_number;
-		unsigned int* indirect_triple_second_block = linear_search(block_number, 16244 + indirect_triple_third_block_number*128*128, indirect_triple_third_block, & indirect_triple_second_block_number, false);
+	// Directo
+	if(block_number < cant_bloques_directos){
+		return inode->block[block_number];
 
-		return &(indirect_triple_second_block[128*128*indirect_triple_second_block_number-block_number+1]);
+	// Indirecto
+	} else if (block_number < cant_bloques_indirectos){
+		unsigned char* buffer[block_number];
+		read_block(inode->block[12], buffer);
+		return buffer[block_number - 12];
 
+	// Indirección Doble
+	} else if (block_number < cant_bloques_indireccion_doble) {
+		unsigned char* buffer1[block_number]; // Del primer bloque
+		unsigned char* buffer2[block_number]; // Del segundo bloque
+		
+		// indice_bloque_1 = bloque - 12 - cant_pos_en_bloque / cant_pos_en_bloque
+		unsigned int idx_buf_1 = (block_number - cant_bloques_indirectos) / cant_pos_en_bloque;
+		
+		// indice_bloque_2 = bloque - 12 - cant_pos_en_bloque % cant_pos_en_bloque
+		unsigned int idx_buf_2 = (block_number - cant_bloques_indirectos) % cant_pos_en_bloque;
+		
+		read_block(inode->block[13], buffer1);
+		read_block(buffer1[idx_buf_1], buffer2);
+
+		return buffer2[idx_buf_2];
+
+	// Indirección Triple
+	} else { 
+		unsigned char* buffer1[block_number];
+		unsigned char* buffer2[block_number];
+		unsigned char* buffer3[block_number];
+
+		// indice_bloque_1 = bloque - cant_bloques_indireccion_doble / cant_pos_en_bloque^2
+		unsigned int idx_buf_1 = (block_number - cant_bloques_indireccion_doble) / (cant_pos_en_bloque*cant_pos_en_bloque);
+
+		// indice_bloque_2 = bloque - cant_bloques_indireccion_doble / cant_pos_en_bloque
+		unsigned int idx_buf_2 = (block_number - cant_bloques_indireccion_doble) / cant_pos_en_bloque;
+
+		// indice_bloque_3 = bloque - cant_bloques_indireccion_doble % cant_pos_en_bloque
+		unsigned int idx_buf_3 = (block_number - cant_bloques_indireccion_doble) % cant_pos_en_bloque;
+
+		read_block(inode->block[14], buffer1);
+		read_block(buffer1[idx_buf_1], buffer2);
+		read_block(buffer2[idx_buf_2], buffer3);
+
+		return buffer3[idx_buf_3];
 	}
 }
 
-/*********************************************************************************************************************************************/
-
-unsigned int* linear_search(unsigned int block_number, 
-								   unsigned int first_number, 
-								   unsigned int* block, 
-								   unsigned int* indirection_block_number,
-								   bool triple){
-	unsigned int res_pointer;
-	unsigned int j = 200;
-	unsigned int val;
-	unsigned int t = triple ? 128 : 1;
-
-	for(int i = 0; i < 128; i++){
-		val = i * 128 * t + first_number + 127;
-		if(block_number <= val){
-			j = i;
-			*indirection_block_number = i;
-			break;
-		}
-	}
-
-	assert(0 <= j && j < 128);
-
-	return &(block[j]);
-}
-
-/*********************************************************************************************************************************************/
 
 void Ext2FS::read_block(unsigned int block_address, unsigned char * buffer)
 {
