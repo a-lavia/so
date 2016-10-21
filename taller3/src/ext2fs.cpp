@@ -289,6 +289,7 @@ unsigned int Ext2FS::blockaddr2sector(unsigned int block)
 struct Ext2FSInode * Ext2FS::load_inode(unsigned int inode_number)
 {
 	struct Ext2FSSuperblock* super_block = superblock();
+	unsigned int block_size = 1024 << super_block->log_block_size;
 
 	// Con esto determino en que block group está el inodo.
 	unsigned int inode_block_group_number = blockgroup_for_inode(inode_number);
@@ -299,76 +300,75 @@ struct Ext2FSInode * Ext2FS::load_inode(unsigned int inode_number)
 	// Obtengo el block group
 	struct Ext2FSBlockGroupDescriptor* inode_block_group_struct = block_group(inode_block_group_number);
 
-	// Obtengo la tabla de inodos
-	(struct Ext2FSInode*) inode_table = (struct Ext2FSInode*) inode_block_group_struct->inode_table;
+	// Inodos por bloque
+	unsigned int ipb = block_size / sizeof(Ext2FSInode);
 
-	return &(inode_table[inode_idx]);
+	unsigned char buffer[block_size];
+
+	// Obtengo la dir del bloque done esta el inodo
+	unsigned int inode_block_addr = inode_block_group_struct->inode_table + inode_idx/ipb;
+	read_block(inode_block_addr, buffer);
+	unsigned int index = inode_idx % ipb;
+
+	Ext2FSInode* p_inodo = new Ext2FSInode;
+	memcpy(p_inodo, (void*) (buffer+index*sizeof(Ext2FSInode)), sizeof(Ext2FSInode));
+
+	return p_inodo;
 }
 
 unsigned int Ext2FS::get_block_address(struct Ext2FSInode * inode, unsigned int block_number)
 {
+
+
+
 	// Tamaño del bloque es de 512 Bytes.
-	
 	unsigned int block_size = 1024 << _superblock->log_block_size;
 
+	unsigned int buffer1[block_size];
+	unsigned int buffer2[block_size];
+	unsigned int buffer3[block_size];
+
 	// 512B / 4B = 128 pos
-	unsigned int cant_pos_en_bloque = block_size / sizeof(unsigned int);
+	unsigned int dir_por_bloque = block_size / sizeof(unsigned int);
 
-	// Los primeros 12 (0 a 11)
-	unsigned int cant_bloques_directos = 12;
-
-	// Primera indireccion
-	unsigned int cant_bloques_indirectos = cant_pos_en_bloque + 12;
-
-	// Indireccion doble
-	unsigned int cant_bloques_indireccion_doble = cant_pos_en_bloque*cant_pos_en_bloque + cant_bloques_indirectos;
+	unsigned int nivel1 = 12;
+	unsigned int nivel2 = nivel1 + dir_por_bloque;
+	unsigned int nivel3 = nivel2 + dir_por_bloque*dir_por_bloque;
 
 	// Indireccion triple -> es el else
 
 	// Directo
-	if(block_number < cant_bloques_directos){
+	if(block_number < nivel1){
 		return inode->block[block_number];
 
 	// Indirecto
-	} else if (block_number < cant_bloques_indirectos){
-		unsigned char* buffer[block_number];
-		read_block(inode->block[12], buffer);
-		return buffer[block_number - 12];
+	} else if (block_number < nivel2){
+		block_number -= nivel1;
+		read_block(inode->block[12], (unsigned char*) buffer1);
+		return buffer1[block_number];
 
 	// Indirección Doble
-	} else if (block_number < cant_bloques_indireccion_doble) {
-		unsigned char* buffer1[block_number]; // Del primer bloque
-		unsigned char* buffer2[block_number]; // Del segundo bloque
+	} else if (block_number < nivel3){
+		block_number -= nivel2;
+		unsigned int idx_buf_1 = block_number / dir_por_bloque;
+		unsigned int idx_buf_2 = block_number % dir_por_bloque;
 		
-		// indice_bloque_1 = bloque - 12 - cant_pos_en_bloque / cant_pos_en_bloque
-		unsigned int idx_buf_1 = (block_number - cant_bloques_indirectos) / cant_pos_en_bloque;
-		
-		// indice_bloque_2 = bloque - 12 - cant_pos_en_bloque % cant_pos_en_bloque
-		unsigned int idx_buf_2 = (block_number - cant_bloques_indirectos) % cant_pos_en_bloque;
-		
-		read_block(inode->block[13], buffer1);
-		read_block(buffer1[idx_buf_1], buffer2);
+		read_block(inode->block[13], (unsigned char*) buffer1);
+		read_block(buffer1[idx_buf_1], (unsigned char*) buffer2);
 
 		return buffer2[idx_buf_2];
 
 	// Indirección Triple
-	} else { 
-		unsigned char* buffer1[block_number];
-		unsigned char* buffer2[block_number];
-		unsigned char* buffer3[block_number];
+	} else {
+		block_number -= nivel3;
+		unsigned int idx_buf_1 = block_number / (dir_por_bloque*dir_por_bloque);
+		block_number = block_number % (dir_por_bloque*dir_por_bloque);
+		unsigned int idx_buf_2 = block_number / dir_por_bloque;
+		unsigned int idx_buf_3 = block_number % dir_por_bloque;
 
-		// indice_bloque_1 = bloque - cant_bloques_indireccion_doble / cant_pos_en_bloque^2
-		unsigned int idx_buf_1 = (block_number - cant_bloques_indireccion_doble) / (cant_pos_en_bloque*cant_pos_en_bloque);
-
-		// indice_bloque_2 = bloque - cant_bloques_indireccion_doble / cant_pos_en_bloque
-		unsigned int idx_buf_2 = (block_number - cant_bloques_indireccion_doble) / cant_pos_en_bloque;
-
-		// indice_bloque_3 = bloque - cant_bloques_indireccion_doble % cant_pos_en_bloque
-		unsigned int idx_buf_3 = (block_number - cant_bloques_indireccion_doble) % cant_pos_en_bloque;
-
-		read_block(inode->block[14], buffer1);
-		read_block(buffer1[idx_buf_1], buffer2);
-		read_block(buffer2[idx_buf_2], buffer3);
+		read_block(inode->block[14], (unsigned char*) buffer1);
+		read_block(buffer1[idx_buf_1], (unsigned char*) buffer2);
+		read_block(buffer2[idx_buf_2], (unsigned char*) buffer3);
 
 		return buffer3[idx_buf_3];
 	}
@@ -381,18 +381,55 @@ void Ext2FS::read_block(unsigned int block_address, unsigned char * buffer)
 	unsigned int sectors_per_block = block_size / SECTOR_SIZE;
 	for(unsigned int i = 0; i < sectors_per_block; i++)
 		_hdd.read(blockaddr2sector(block_address)+i, buffer+i*SECTOR_SIZE);
-	}
+}
+
 
 struct Ext2FSInode * Ext2FS::get_file_inode_from_dir_inode(struct Ext2FSInode * from, const char * filename)
 {
+
+	Ext2FSSuperblock* super_block = superblock();
+
+	unsigned int block_size = 1024 << super_block->log_block_size;
+
 	if(from == NULL)
 		from = load_inode(EXT2_RDIR_INODE_NUMBER);
 	//std::cerr << *from << std::endl;
 	assert(INODE_ISDIR(from));
 
+	bool encontrado = false;
 
-	
+	Ext2FSDirEntry* dirEntry;
+	unsigned int nodeNumber;
 
+	// Levantar el directorio
+	unsigned int cantBloquesDir = from->blocks;
+
+	unsigned char buffer_block[block_size];
+	unsigned char buffer[cantBloquesDir * block_size];
+	unsigned int proxPosCp = 0;
+
+	for(unsigned int i = 0; i < cantBloquesDir; i++){
+		unsigned int block_addr = get_block_address(from, i);
+		read_block(block_addr, (unsigned char*) buffer_block);
+
+		memcpy( (void*) buffer + proxPosCp, buffer_block, block_size);
+		proxPosCp = proxPosCp + block_size;
+	}
+
+	// Buscar el archivo que corresponda
+	unsigned int posProxArch = 0;
+	do {
+		dirEntry = (Ext2FSDirEntry*) (buffer+posProxArch);
+		posProxArch += dirEntry->record_length;
+
+		if (strcmp(filename, dirEntry->name) == 0){
+			encontrado = true;
+			nodeNumber = dirEntry->inode;
+		}
+
+	} while(!encontrado);
+
+	return load_inode(nodeNumber);
 }
 
 fd_t Ext2FS::get_free_fd()
@@ -480,7 +517,7 @@ int Ext2FS::write(fd_t filedesc, const unsigned char * buffer, int size)
 int Ext2FS::seek(fd_t filedesc, int offset)
 {
 	//std::cerr << "offset: " << offset << " size: " << _open_files[filedesc].size << std::endl;
-	int position = offset;
+	unsigned int position = offset;
 	if(offset < 0)
 		position = _open_files[filedesc].size + offset;
 	if(position >= _open_files[filedesc].size)
