@@ -5,100 +5,85 @@ Aquí presentamos nuestra implementación del \textit{Read-Write Lock} donde exp
 
 \subsection{Estructura}
 
-Para poder implementar el \textit{Read-Write Lock} utilizamos una estructura basada en una variable de condición y un mutex, además de dos enteros que cuentan la cantidad de lectores y escritores y un flag.
+Para poder implementar el \textit{Read-Write Lock} utilizamos una estructura basada en una variable de condición, dos mutex y un entero que representa la cantidad de lectores.
 
 La estructura es la siguiente:
 
 \begin{itemize}
-	\item Mutex: \textbf{m}
-	\item Variable de condicion: \textbf{turn}
-	\item Contador de lectores: \textbf{reading}
-	\item Contador de escritores: \textbf{writers}
-	\item Flag: \textbf{writing}
+	\item Mutex: \textbf{mtx}
+	\item Mutex: \textbf{roomEmtpy}
+	\item Variable de condición: \textbf{turn}
+	\item Contador de lectores: \textbf{readers}
 \end{itemize}
 
 
 \subsection{Función \textit{rlock()}}
 
 \begin{lstlisting}
-Pido el mutex
-
-Si la cantidad de escritores es mayor que cero
-	Espero el proximo turno
-
-Mientras haya alguien escribiendo
-	Esperar el proximo turno
+Pido el mutex roomEmpty
+Pido el mutex mtx
 
 Aumento en uno el contador de la cantidad de lectores
 
-Libero el mutex
+Libero el mutex mtx
+Libero el mutex roomEmpty
 \end{lstlisting}
 
-Lo primero realiza esta función es pedir el mutex. Una vez obtenido el mismo, se fija si la cantidad de escritores es mayor que cero y, si lo es, espera al proximo turno. Esto se hace para parar una posible seguidilla de pedidos de lectura que produzcan inanición a los threads que pidan una lectura.
+Lo primero realiza esta función es pedir los mutex roomEmpty y mtx. Una vez obtenidos estos, aumenta en uno la cantidad de lectores y luego, libera ambos mutex.
 
-Luego, mientras haya algún thread escribiendo se espera hasta el proximo turno. Esto se hace para garantizar el acceso exclusivo a la sección critica.
-
-Por último, una vez que no haya algún thread escribiendo se aumenta en uno el contador de la cantidad de lectores y se libera el mutex.
+Se liberan ambos mutex para que otro lector o algún escritor que estén esperando para entrar en la sección critica puedan hacerlo.
 
 \newpage
 
 \subsection{Función \textit{wlock()}}
 
 \begin{lstlisting}
-Pido el mutex
+Pido el mutex roomEmpty
+Pido el mutex mtx
 
-Aumento en uno el contador de la cantidad de escritores
+Mientras la cantidad de lectores es mayor que cero
+	Espero que terminen de leer con la variable turn, sobre el mutex mtx
 
-Mientras haya alguien escribiendo o la cantidad de lectores es mayor que cero
-	Espero el proximo turno
 
-Levanto el flag de escritura
-
-Libero el mutex
+Libero el mutex mtx
 \end{lstlisting}
 
-Primero se pide el mutex. Una vez obtenido el mismo se aumenta el contador de la cantidad de escritores en uno.
+Primero se piden los mutex roomEmpty y mtx.
+Luego, mientras haya lectores, espera a que éstos terminen de leer. Esto se hace para garantizar el acceso exclusivo a la sección critica del escritor. Se realiza con un wait en la variable de condición \textbf{turn}, donde éste genera un signal a todos los procesos que esperan sobre este mutex menos el que realiza el wait. Esto es importante para cuando analicemos los runlock y wunlock.
 
-Luego, mientras haya alguien escribiendo o leyendo, espera al proximo turno. Esto se hace para garantizar el acceso exclusivo a la sección critica ya que si alguien está escribiendo no debería acceder otro para escribir y, también, para que se escriba solamente cuando nadie esté leyendo.
-
-Una vez que no haya nadie escribiendo ni leyendo, se levanta el flag de escritura y se libera el mutex.
+Una vez que no haya nadie leyendo en la sección critica, se libera sólo el mutex mtx.
+El mutex roomEmpty lo mantiene para garantizarse la exclusividad. Como cada proceso, cuando quiere leer o escribir, lo pide, quedarían todos esperando hasta que el proceso de escritura que lo tiene lo libere.
 
 ~
 \subsection{Función \textit{runlock()}}
 
 \begin{lstlisting}
-Pedir mutex
+Pedir mutex mtx
 
 Disminuyo en uno el contador de la cantidad de lectores
 
 Si la cantidad de lectores es igual a cero
-	Dar turno a todos los que esperan uno
+	Dar turno al escritor que esté esperando
 
-Liberar mutex
+Liberar mutex mtx
 \end{lstlisting}
 
-Una vez terminada la lectura, se pide el mutex nuevamente y se disminuye en uno el contador de la cantidad de lectores.
+Una vez terminada la lectura, se pide sólo el mutex mtx (ya que el mutex roomEmpty es para entrar a la sección critica). Se disminuye la cantidad de lectores y, si ésta llega a cero se realiza un signal a algún escritor, si lo hay.
 
-Luego, si ya no hay más lectores se da turno a todos los que esperan uno, tanto lectores como escritores. Y, por último, se libera el mutex.
+Los lectores pueden entrar aquí cuando hay un escritor esperando porque, cuando el escritor hace un wait sobre la variable de condición y el mutex mtx, se realiza un signal a todos los threads que pidieron ese mutex menos el del escritor entonces los lectores no se quedarían esperando cuando piden el mutex aquí, sino que entran todos.
+
+Por último, se libera el mutex mtx.
 
 ~
 \subsection{Función \textit{wunlock()}}
 
 \begin{lstlisting}
-Pido el mutex
-
-Disminuyo en uno el contador de la cantidad de escritores
-
-Bajo el flag de escritura
-
-Doy turno a todos los que esperan uno
-
-Libero el mutex
+Se libera el mutex roomEmpty
 \end{lstlisting}
 
-Una vez terminada la escritura, se pide el mutex nuevamente, se baja el flag de escritura y se disminuye el contador de la cantidad de escritores.
+Una vez terminada la escritura, se libera el mutex roomEmpty que se habia quedado el escritor para que no pueda entrar nadie mientras él esté en la sección critica.
 
-Luego, se da un turno a todos los que esperan uno, tanto lectores como escritores y se libera el mutex.
+Como el mutex roomEmpty se libera, ahora puede entrar cualquiera que lo haya pedido, tanto lector como escritor.
 
 
 ~
@@ -106,7 +91,17 @@ Luego, se da un turno a todos los que esperan uno, tanto lectores como escritore
 
 Por lo expuesto anteriormente sobre el funcionamiento de nuestra estructura, ésta contiene los medios suficientes para evitar que una seguidilla de threads con una misma operación hagan que se bloquéen threads con la operación contraria.
 
-En el caso de los lectores, estos esperan a que terminen los escritores de escribir. Y, en el caso de los escritores que no haya threads escriendo o threads leyendo.
+En el caso de los lectores, estos entran pidiendo los mutex roomEmpty y mtx, aumentan la cantidad de lectores, y luego liberan ambos mutex, pudiendo hacer que sigan entrando lectores o algún escritor.
+
+En el caso de los escritores, como necesitan ser los únicos en la sección critica, cuando entran piden ambos mutex pero sólo se quedan con roomEmpty, haciendo que no entre ningún otro proceso a esta sección, y liberan el mutex mtx para que los lectores que estaban en la sección critica terminen de leer. Luego, éste puede escribir en la sección critica ya que es el único dentro y, al salir, libera el mutex roomEmpty así puede entrar tanto lectores como escritores.
+
+Si hay una seguidilla de lectores, y un escritor, éste toma el el mutex roomEmpty y hace que no entre más nadie. Espera a que terminen todos los lectores que estaban en la sección critica y luego procede a escribir. Una vez terminado libera el mutex roomEmpty y pueden entrar nuevamente tanto lectores como escritores.
+
+Si hay una seguidilla de escritores, y un lector, éste puede entrar cuando se libere el mutex roomEmpty. Como el lector libera ambos mutex puede entrar cualquier otro tipo de proceso. Si es de lectura ocurre lo mismo. Si es de escritura, el lector tiene que esperar a que se libere el mutex mtx con el wait de la variable de condición, luego éste le lanza un signal al escritor para que pueda escribir y libera el mutex mtx.
+
+Si entran de uno en uno, por ejemplo, primero el lector y luego un escritor, el lector pide los dos mutex, aumenta la cantidad de lectores y los libera. Luego entra el escritor, pide ambos mutex y se queda esperando hasta que termine el lector, liberando solo el mutex mtx para que éste pueda terminar. Cuando el lector termina la lectura, disminuye en uno la cantidad de lectores y, como es cero, lanza un signal al escritor para que pueda escribir. Luego, este escribe y cuando termina libera el mutex roomEmpty.
+
+Si fuera al reves, primero un escritor y luego un lector. El escritor como toma el mutex roomEmpty y no lo libera hasta que haya terminado la lectura, el lector se queda esperando a que éste sea liberado. Cuando el escritor termina la escritura, libera el mutex roomEmpty y ahora puede entrar a la sección critica el lector.
 
 ~
 \subsection{Deadlock}
@@ -116,15 +111,16 @@ Para mostrar que en la estructura no se genería deadlock veamos que no se cumpl
 \begin{itemize}
 	\item \textbf{Exclusión mutua}: Un recurso no puede estar asignado a más de un proceso. 
 \newline
-	Cómo vimos, todas las operaciones como primera medida realizan un lock con el mutex, esto garantiza que el acceso a un recurso le pertenece a un sólo thread y todos los que quieran utilizarlo esperan hasta que el que lo está utilizando realice un unlock. Si se cae en una variable de condición se liberan los mutex pero todos los threads caerían también en la misma variable de condición y éstas están dentro de ciclos donde, si se quere escribir se espera a que terminen de escribir y que hayan leído los lectores, o si se quiere leer que terminen de escribir. Entonces los lectores son los únicos que podrían entrar varios a la vez pero no modificarían las variables, en cambio los que quieren escribir tienen acceso exclusivo.
+	Cómo vimos, las operaciones de lock (tanto read como write) piden ambos mutex en el mismo orden, esto garantiza que el acceso a un recurso le pertenece a un sólo thread y todos los que quieran utilizarlo deben esperar hasta que se los libere.
 
+	En el caso de la variable de condición en la función wlock, como es sobre el mutex mtx, este realiza un signal a todos los que lo pidieron menos al que espera la condición (en este caso el escritor). Entonces, este espera a que terminen de leer todos y, cuando leyo el último y sale de la sección critica, le envía un signal al escritor que estaba esperando y éste tiene en este momento tiene garantizado el acceso exclusivo a la sección.
 	\item \textbf{Hold and wait}: Los procesos que ya tienen algún recurso pueden solicitar otro.
 \newline
-	En este caso, esto ocurriría si un thread no puede leer o escribir se quede con el mutex hasta que pueda realizar la operación. Pero esto no sucede ya que los mutex se liberan en el momento que el thread llama a la función \textbf{pthread\_cond\_wait()} para esperar que la condición se cumpla para realizar la operación.
+	En este caso, esto ocurriría si un thread no puede leer o escribir se quede con el mutex hasta que pueda realizar la operación. Pero esto no sucede ya que los lectores piden ambos mutex y los liberan y, en el caso de los escritores, estos piden los mutex, si hay escritores, éste libera a todos los procesos que hayan pedido el mutex mtx, por el llamado a  a la función \textbf{pthread\_cond\_wait()}, y luego, esperan a que hayan leído los lectores en la sección critica para que le envíen un signal y él poder escribir.
 	
 	\item \textbf{No Preemption}: Un recurso puede ser liberado solamente de forma voluntaria por el proceso que lo retiene.
 \newline
-	En este caso, no podría suceder esto ya que los threads que quieran acceder a un recurso que esta siendo utilizado deben esperar a que la variable de condición sea verdadera y ésta sólo puede ser liberada por el proceso que tiene el recurso.
+	En este caso, no podría suceder esto ya que los threads que quieran acceder a un recurso que esta siendo utilizado deben esperar a que el mutex roomEmpty sea liberado.
 	
 	\item \textbf{Espera circular}: Tiene que haber un ciclo de $N \geq 2$, tal que $P_i$ espera un recurso que tiene $P_{i+1}$.
 \newline
@@ -134,16 +130,17 @@ Para mostrar que en la estructura no se genería deadlock veamos que no se cumpl
 
 \subsection{Tests}
 
-Para probar nuestra implementación de \textit{Read-Write Lock} realizamos tres tipos de test que se pueden encontrar en la carpeta \textbf{locks} junto con la implementación de la estructura. En cada uno de estos lanzamos 10.000 threads.
+Para probar nuestra implementación de \textit{Read-Write Lock} realizamos tres tipos de test que se pueden encontrar en la carpeta \textbf{locks} junto con la implementación de la estructura.
 
 Pasamos a explicar sobre ellos:
 
 \begin{enumerate}
-	\item En este primer test creamos 5000 threads escritores y 5000 threads lectores todos con un único número, siendo los pares los threads lectores y los impares los escritores. Lo que se hace es guardar en un arreglo cuantos lectores hubo hasta el momento de que esta un thread escritor y viceversa.
-	\newline
-	Una vez que corrieron todos los threads, se revisa ese arreglo y se mira si la cantidad de threads lectores o escritores está dentro de un rango de 15 threads (tomado este número de forma arbitraria) de diferencia según el thread del índice. Si está por debajo de ese rango quiere decir que se tarda en leer (si el índice es par) o en escribir (si el índice es impar). Si está por arriba del rango quiere decir que tiene una prioridad mayor leer (si el índice es par) o escribir (si el índice es impar).
+	\item En este primer test lanzamos 50 threads lectores al comienzo, despues un escritor y luego, 50 threads lectores más, en este orden. Cada uno de estos pide su lock (los de lectura el rlock y el de escritura el wlock) y cuando lo obtienen escriben \emph{Read} o \emph{Write} dependiendo que tipo de thread es. 
+	Este test sirve para observar si los lectores tienen prioridad sobre el escritor. Si esto sucede, el thread de escritura que fue lanzado en el medio aparecería despues de que todos los threads de lectura hayan terminado.
 
-	\item En el segundo test realizamos un experimento con la misma logica que el primero pero con la diferencia que un 90\% de los threads son escritores y un 10\% threads son lectores.
+	\item En el segundo test realizamos algo parecido al anterior, lanzamos 50 threads lectores, 10 threads escritores y 50 threads lectores.
+	Con este test queremos observar si los lectores tienen prioridad (haciendo que los 10 escritores escriban después de todos los lectores); o si los escritores tienen prioridad (haciendo que cuando son lanzados, los lectores siempre esperen que todos los escritores terminen de escribir).
 
-	\item En este tercer y último test tambíen realizamos un experimento con la misma logica que el primero pero esta vez un 90\% de los threads son lectores y un 10\% son escritores.
+	\item En este tercer y último test lo que hacemos es lanzar 50 threads donde 25 son escritores y 25 son lectores. Éstos son lanzados de uno en uno. 
+	Lo que queremos observar en éste test es si los escritores tienen prioridad sobre los lectores o viceversa. Éste test lo mostraria muy rápido ya que si alguno tiene prioridad sobre otro, este último esperaría a que los que tienen mayor prioridad terminen.
 \end{enumerate}

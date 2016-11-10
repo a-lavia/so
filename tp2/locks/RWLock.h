@@ -11,12 +11,11 @@ class RWLock {
         void wunlock();
 
     private:
-        pthread_mutex_t m;
+        pthread_mutex_t mtx;
+        pthread_mutex_t roomEmpty;
         pthread_cond_t  turn;   /* Event: someone else's turn */
 
-        int reading;
-        int writing;
-        int writers;
+        int readers;
 };
 
 #endif

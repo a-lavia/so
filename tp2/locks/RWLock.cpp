@@ -10,78 +10,65 @@
 RWLock :: RWLock() {
 
 	// Inicializamos el mutex y el cond
-	pthread_mutex_init(&this->m, NULL);
+	pthread_mutex_init(&this->mtx, NULL);
+	pthread_mutex_init(&this->roomEmpty, NULL);
 	pthread_cond_init(&this->turn, NULL);
 
-	// if (pthread_mutex_init(&this->m, NULL) != 0) {
-	//	printf("\n mutex init failed\n");
-	//	return 1;
-	// }
+	this->readers = 0;
 }
+
 
 void RWLock :: rlock() {
-	pthread_mutex_lock(&this->m);
+	pthread_mutex_lock(&this->roomEmpty);
+	pthread_mutex_lock(&this->mtx);
 
-	// Puede haber alguien escribiendo, si lo hay que espere
-	// hasta que termine
-	/*
-	 *	Si es un while podría haber siempre alguien que quiera
-	 *	escribir y genera inanición. Mejor que pregunte una vez
-	 *	y luego esperar a que alguno termine de escribir y leer
-	 *	en ese momento.
-	 */
-	if(this->writers > 0)
-		pthread_cond_wait(&this->turn, &this->m);
+	// Aquí solo va a haber lectores
+	// Cuando entro tengo el mutex roomEmpty y lo libero así puede entrar cualquiera.
 
-	// Espero que terminen de escribir para poder leer.
-	while(this->writing > 0)
-		pthread_cond_wait(&this->turn, &this->m);
+	this->readers++;
 
-	// Sección critica
-	this->reading++;
-
-	pthread_mutex_unlock(&this->m);
+	pthread_mutex_unlock(&this->mtx);
+	pthread_mutex_unlock(&this->roomEmpty);
 }
+
 
 void RWLock :: wlock() {
-	pthread_mutex_lock(&this->m);
+	pthread_mutex_lock(&this->roomEmpty);
+	pthread_mutex_lock(&this->mtx);
 
-	// Agrego un escritor más a la espera.
-	this->writers++;
+	// Si hay lectores espero que todos terminen de leer.
+	// pthread_cond_wait libera el mutex mtx a todos menos al que está esperando la condicion.
+	// Como el mutex roomEmpty lo sigue teniendo, espera a que terminen todos los lectores.
+	// Esto garantiza exclusividad del escritor.
 
-	// Espero mientras hay alguien escribiendo o la cantidad 
-	// de lectores es mayor que cero
-	while(this->writing > 0 || this->reading > 0)
-		pthread_cond_wait(&this->turn, &this->m);
+	while(this->readers > 0){
+		pthread_cond_wait(&this->turn, &this->mtx);
+	}
 
-	// Sección critica - Aquí es el único que escribe
-	this->writing++;
-
-	pthread_mutex_unlock(&this->m);
+	pthread_mutex_unlock(&this->mtx);
 }
+
 
 void RWLock :: runlock() {
-	pthread_mutex_lock(&this->m);
+	pthread_mutex_lock(&this->mtx);
 
-	this->reading--;
+	this->readers--;
 
-	// Si no hay mas threads leyendo hago un signal a todos
-	if(this->reading == 0)
+	// Descuento la cantidad de lectores y cuando llega a cero despierto al escritor, si hay, que esperaba
+	// En este lugar pasan tres cosas: la seccion critica solo tiene lectores, o no hay nadie en ella, o hay un escritor.
+	// Si la seccion critica tiene solo lectores o no hay nadie -> el mutex roomEmpty no lo tiene nadie y puede entrar cualquiera
+	// Si hay un escritor -> el mutex roomEmpty lo tiene el escritor y hasta que no terminen de leer y, el mismo de escribir, no lo devuelve.
+	// Cuando lo devuelve puede entrar cualquiera.
+
+	if(this->readers == 0){
 		pthread_cond_broadcast(&this->turn);
+	}
 
-	pthread_mutex_unlock(&this->m);
+	pthread_mutex_unlock(&this->mtx);
 }
 
+
 void RWLock :: wunlock() {
-	pthread_mutex_lock(&this->m);
-
-	// Terminó la escritura, descuento la cantidad de escritores y 
-	// seteo que nadie más está escribiendo
-	// Luego hago un signal a todos
-	this->writing = 0;
-	this->writers--;
-
-	pthread_cond_broadcast(&this->turn);
-
-	pthread_mutex_unlock(&this->m);
+	// Libero el mutex roomEmpty y puede entrar cualquiera.
+	pthread_mutex_unlock(&this->roomEmpty);
 }

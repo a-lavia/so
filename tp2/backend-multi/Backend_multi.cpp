@@ -13,6 +13,7 @@ unsigned int alto = -1;
 
 RWLock lock_tablero_temporal;
 RWLock lock_tablero_confirmado;
+RWLock lock_socketfd_cliente;
 
 
 bool cargar_int(const char* numero, unsigned int& n) {
@@ -86,13 +87,14 @@ int main(int argc, const char* argv[]) {
     // aceptar conexiones entrantes.
     socket_size = sizeof(remoto);
     while (true) {
+        lock_socketfd_cliente.wlock();
         if ((socketfd_cliente = accept(socket_servidor, (struct sockaddr*) &remoto, (socklen_t*) &socket_size)) == -1)
             cerr << "Error al aceptar conexion" << endl;
         else {
-
             pthread_t nuevo_thread;
             pthread_create(&nuevo_thread, NULL, nuevo_jugador, &socketfd_cliente);
         }
+        lock_socketfd_cliente.wunlock();
     }
 
     return 0;
