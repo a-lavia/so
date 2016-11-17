@@ -223,10 +223,8 @@ class Node(object):
                 mas_cercanos[node_hash] = node_rank
 
         # busco los mas cercanos y los devuelvo
-        for nhash, nrank in self.__get_mins(mas_cercanos, thing_hash):
-            nodes_min.add(nrank)
-
-
+        for n in self.__get_mins(mas_cercanos, thing_hash):
+            nodes_min.add(n)
 
         return nodes_min
 
@@ -250,7 +248,6 @@ class Node(object):
         # El find_nodes que se usa acá debe propagar la info de que este
         # es un nuevo nodo.
 
-        print "hello world!"
         print("[D] [{:02d}] [CONSOLE|JOIN] Uniendo el nodo actual al nodo '{}'".format(self.__rank, contact_node_rank))
 
         # Si yo soy el contacto inicial, inicio por default
