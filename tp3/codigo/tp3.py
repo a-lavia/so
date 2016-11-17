@@ -126,21 +126,108 @@ class Node(object):
 
     # Le pregunta a los nodos mínimos por el hash 
     def __find_nodes(self, contact_nodes, thing_hash):
+    # contact_nodes = [(node_hash, node_rank)]
+    # thing_hash = data (?)
+    # BFS / DFS
+    # tengo que buscar uno de la red
+    # Varios nodos pueden tener el mismo archivo y devuelven los que tienen esa distancia
+    # hace lo mismo que find_nodes_join pero con los minimos
+    # te quedas con los k mas cercanos o los k minimos
+    # cuando me envian los valores los agregos a la cola
+    # traigo vecinos del uno y y luego le pido los vecinos
+    # me fijo si no le pregunte dos veces al mismo.
+    # luego filtro los mas cercanos al hash
+    # tengo que reconstruir toda la red
+    # me fijo de los k mas cercanos y voy por el minimo.
+
+    # NO BLOQUEANTE -> PREGUNTO A TODOS Y HAGO UN WAIT HASTA QUE ME RESPONDA
+    # EL QUE NECESITO
+
         queue = contact_nodes
         processed = set()
         nodes_min = {}
 
-	###################
-	# Completar
-	###################
+        # podria ser yo el mas cercano
+        mas_cercanos = {}
+        mas_cercanos[self.__hash] = self.__rank
+
+        # me agrego a mi mismo al conjunto de procesados
+        processed.add(self.__rank)
+
+        while len(queue) > 0:
+            node_hash, node_rank = queue.pop()
+            if node_rank not in processed:
+                processed.add(node_rank)
+                # pido los valores mas cercanos al hash
+                self.__comm.send(thing_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_REQ)
+                # tomo la respuesta del nodo
+                res = self.__comm.recv(source=node_rank, tag=TAG_NODE_FIND_NODES_RESP)
+                queue.extend(res)
+            else:
+                mas_cercanos[node_hash] = node_rank
+
+        # busco los mas cercanos y los devuelvo
+        for nhash, nrank in self.__get_mins(mas_cercanos, thing_hash):
+            nodes_min[nhash] = nrank
+
         return nodes_min
+
 
     # casi igual a find_node pero agrega los archivos necesarios al hacer join. Pueden hacerlo en un solo método
     def __find_nodes_join(self, contact_nodes):
+        # Camino minimo
+        # devuelve vecinos y sus archivos (file names) -> los file names sirven para ver cuales son los archivos con los que me deberia quedar son los mas cercanos
+        #                                                   hay que guardarlos dentro de files
+        # siempre devuelve la lista, no ok, si devuelve vacio es porque el mas cercano es el que se lo mande (fijarse si no agregarse)
+        
+        # pregunto al primer nodo y con sus valores  hago la cola
+        # si me envian archivos los tengo que guardar y la de nodos(mas cerca de mi que el nodo al que le pregunte)
+
+        # con tag store envio los archivos al nodo (en un mensaje aparte), no espero nada.
+
         nodes_min = set()
-	################
-	# Completar
-	################
+        processed = set()
+        node_hash, node_rank = contact_nodes
+        self.__comm.send(contact_nodes, dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
+       
+        # files es un dicc con los archivos de node del que soy el nuevo nodo más cercano
+        (data, files) = self.__comm.recv(source=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
+        
+        # Envio los files recibidos al nodo que se agrega
+        for f in files:
+            self.__comm.send(f, dest=node_rank, tag=TAG_NODE_STORE_REQ)
+
+        # Me quedo con los mas cercanos y sigo buscando con ellos
+        queue = []
+        for node in self.__get_mins(data, node_hash):
+            queue.append(node)
+
+        mas_cercanos = {}
+
+        while len(queue) > 0:
+            nhash, nrank = queue.pop()                                 
+            if nrank not in processed:
+                processed.add(nrank)
+                # pido los valores mas cercanos al hash
+                self.__comm.send(node_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
+                # tomo la respuesta del nodo
+                
+                # res = (minimo, files)
+                res = self.__comm.recv(source=nrank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
+                queue.extend(res[0])
+
+                # Envio los files recibidos al nodo que se agrega
+                for f in res[2]:
+                    self.__comm.send(f, dest=node_rank, tag=TAG_NODE_STORE_REQ)
+            else:
+                mas_cercanos[node_hash] = node_rank
+
+        # busco los mas cercanos y los devuelvo
+        for nhash, nrank in self.__get_mins(mas_cercanos, thing_hash):
+            nodes_min.add(nrank)
+
+
+
         return nodes_min
 
     def __print_routing_table(self):
@@ -163,6 +250,7 @@ class Node(object):
         # El find_nodes que se usa acá debe propagar la info de que este
         # es un nuevo nodo.
 
+        print "hello world!"
         print("[D] [{:02d}] [CONSOLE|JOIN] Uniendo el nodo actual al nodo '{}'".format(self.__rank, contact_node_rank))
 
         # Si yo soy el contacto inicial, inicio por default
@@ -201,7 +289,7 @@ class Node(object):
 
             print("[D] [{:02d}] [CONSOLE|JOIN] Tabla de ruteo: {}".format(self.__rank, self.__routing_table))
 
-            print("[D] [{:02d}] [CONSOLE|JOIN] Tabla de archivs: {}".format(self.__rank, self.__files))
+            print("[D] [{:02d}] [CONSOLE|JOIN] Tabla de archivos: {}".format(self.__rank, self.__files))
 
             self.__initialized = True
 
@@ -223,7 +311,8 @@ class Node(object):
         nodes_min = self.__find_nodes(nodes_min_local, file_hash)
 	########################
 	#     Completar
-	########################
+	########################store
+    # tengo que enviar un agregate aca.
  
             # Envio el archivo a los nodos más cercanos
 
@@ -239,10 +328,16 @@ class Node(object):
 
         # Propago consulta de find nodes a traves de mis minimos locales.
         nodes_min = self.__find_nodes(nodes_min_local, file_hash)
+        # quien es el mas cercano a ese nodo? hasta que te dice YO (el unico que esta)
+
 
 	########################
 	#     Completar
 	########################
+
+
+
+
         # Devuelvo el archivo.
         self.__comm.send(data, dest=source, tag=TAG_CONSOLE_LOOKUP_RESP)
 
