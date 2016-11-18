@@ -187,9 +187,19 @@ class Node(object):
 
         nodes_min = set()
         processed = set()
-        node_hash, node_rank = contact_nodes
-        self.__comm.send(contact_nodes, dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
+        queue = contact_nodes
+        mas_cercanos = {}
+
+        node_hash, node_rank = queue[0]
+
+        mas_cercanos[node_hash] = node_rank
+
+        # node_hash, node_rank = contact_nodes
+        print "\nCONTACT NODES \n", contact_nodes
+        self.__comm.send(contact_nodes[0], dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
        
+        queue.pop()
+
         # files es un dicc con los archivos de node del que soy el nuevo nodo más cercano
         (data, files) = self.__comm.recv(source=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
         
@@ -198,11 +208,8 @@ class Node(object):
             self.__comm.send(f, dest=node_rank, tag=TAG_NODE_STORE_REQ)
 
         # Me quedo con los mas cercanos y sigo buscando con ellos
-        queue = []
         for node in self.__get_mins(data, node_hash):
             queue.append(node)
-
-        mas_cercanos = {}
 
         while len(queue) > 0:
             nhash, nrank = queue.pop()                                 
