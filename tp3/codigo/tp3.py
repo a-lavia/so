@@ -207,19 +207,19 @@ class Node(object):
             nhash, nrank = queue.pop()                                 
             if nrank not in processed:
                 processed.add(nrank)
-                # pido los valores mas cercanos al hash
-                self.__comm.send(node_hash, dest=nrank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
-                # tomo la respuesta del nodo
+                # pido los valores mas cercanos a mi para agregarlos
+                self.__comm.send((self.__hash,self.__rank), dest=nrank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
                 
+                # tomo la respuesta del nodo
                 # res = (minimo, files)
                 res = self.__comm.recv(source=nrank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
                 queue.extend(res[0])
                 for fhash, fpath in res[1].items():
                     self.__files[fhash] = fpath
 
-                for nhash, nrank in res[0]:
-                    if nrank != self.__rank:
-                        mas_cercanos[nhash] = nrank
+                for node_hash, node_rank in res[0]:
+                    if node_rank != self.__rank:
+                        mas_cercanos[node_hash] = node_rank
 
         # busco los mas cercanos y los devuelvo
         for n in mas_cercanos.items():
@@ -327,17 +327,20 @@ class Node(object):
     #     Completar
     ########################
 
-        print nodes_min
-        print "\nimprimo el dic\n"
+        # print nodes_min
+        # print "\nimprimo el dic\n"
 
         # obtengo los de menor distancia a file_hash
         nodes_min = self.__get_mins(nodes_min, file_hash)
 
         # Envio el archivo a los nodos más cercanos
         for min_hash, min_rank in nodes_min:
-            self.__comm.send(data, dest=min_rank, tag=TAG_NODE_STORE_REQ)
+            if self.__rank == min_rank:
+                self.__handle_node_store_req(data)
+            else:
+                self.__comm.send(data, dest=min_rank, tag=TAG_NODE_STORE_REQ)
 
-        print "\n termino de imprimir\n\n"
+        # print "\n termino de imprimir\n\n"
 
 
     # Busca el archivo entre los más cercanos, a partir del nodo fuente. Les va consultando a cada uno los más cercanos
@@ -359,13 +362,13 @@ class Node(object):
     ########################
     #     Completar
     ########################
-        print "\n\n LLEGO ENTRO HANDLE CONSOLE LOOK UP \n\n"
+        # print "\n\n LLEGO ENTRO HANDLE CONSOLE LOOK UP \n\n"
 
         res = False
         for min_hash, min_rank in nodes_min.items():
             if not res and min_rank != self.__rank:
                 self.__comm.send(file_hash, dest=min_rank, tag=TAG_NODE_LOOKUP_REQ)
-                print "\n\n LLEGO RECIBI DE HANDLE NODE LOOK UP \n\n"
+                # print "\n\n LLEGO RECIBI DE HANDLE NODE LOOK UP \n\n"
                 res = self.__comm.recv(source=min_rank, tag=TAG_NODE_LOOKUP_RESP)
             
             elif min_rank == self.__rank and file_hash in self.__files:
@@ -443,7 +446,7 @@ class Node(object):
         else:
             data = False
 
-        print "\n\n LLEGO HANDLE NODE LOOK UP \n\n"
+        # print "\n\n LLEGO HANDLE NODE LOOK UP \n\n"
         self.__comm.send(data, dest=source, tag=TAG_NODE_LOOKUP_RESP)
 
     def __handle_node_store_req(self, data):
@@ -452,7 +455,7 @@ class Node(object):
 
         print("[D] [{:02d}] [NODE|STORE] Almacenando archivo '{}' con hash '{}'".format(self.__rank, file_name, file_hash))
 
-        print "\n\n LO AGREGO \n\n"
+        # print "\n\n LO AGREGO \n\n"
         self.__files[file_hash] = file_name
 
         print("[D] [{:02d}] [NODE|STORE] Tabla de archivos: {}".format(self.__rank, self.__files))
@@ -466,12 +469,14 @@ class Node(object):
             data = self.__comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             tag = status.Get_tag()
             source = status.Get_source()
-            print "\n\n SOY NODO Y RECIBI UN MENSAJE \n\n"
+            # print "\n SOY NODO Y RECIBI UN MENSAJE \n"
 
-            if tag == TAG_NODE_LOOKUP_REQ:
-                print "\n\n SOY NODO Y RECIBI lookup req \n\n"
-            elif tag == TAG_CONSOLE_STORE_REQ:
-                print "\n\n SOY NODO Y RECIBI STORE REQ\n\n"
+            # if tag == TAG_NODE_LOOKUP_REQ:
+            #     print "\n SOY NODO Y RECIBI lookup req \n"
+            # elif tag == TAG_CONSOLE_STORE_REQ:
+            #     print "\n SOY NODO Y RECIBI CONSOLE STORE REQ\n"
+            # elif tag == TAG_NODE_STORE_REQ:
+            #     print "\n SOY NODO Y RECIBI NODE STORE REQ\n"
 
             print("[D] [{:02d}] recv | data: {}, source: {}, tag: {}".format(self.__rank, data, source, tag_to_string(tag)))
 
@@ -507,7 +512,7 @@ class Node(object):
                 self.__handle_node_look_up(source, data)
                 continue
             elif tag == TAG_NODE_STORE_REQ:
-                print "\n\n SOY UN TAG_NODE_STORE_REQ\n\n"
+                # print "\n\n SOY UN TAG_NODE_STORE_REQ\n\n"
                 self.__handle_node_store_req(data)
                 continue
 
@@ -596,11 +601,11 @@ class Console(object):
         """
         print(">>> Almacenando archivo '{}' en nodo '{:02d}'...".format(file_name, node_rank))
 
-        print "\n\n almacenando sarasa\n\n"
+        # print "\n\n almacenando sarasa, rank = ", node_rank
 
         data = (hash_fn(file_name), file_name)
         self.__comm.send(data, dest=node_rank, tag=TAG_CONSOLE_STORE_REQ)
-        print "\n\n la sarasa se envió\n\n"
+        # print "\nla sarasa se envió\n\n"
 
     def __handle_look_up(self, node_rank, file_name):
         """Procesa comando: 'look-up <node_rank> <file_name>'.
@@ -611,13 +616,13 @@ class Console(object):
         data = hash_fn(file_name)
         self.__comm.send(data, dest=node_rank, tag=TAG_CONSOLE_LOOKUP_REQ)
 
-        print "\n\n LLEGO DENTRO HANDLE LOOK UP, el node_rank es", node_rank
-        print "\n\n"
+        # print "\n\n LLEGO DENTRO HANDLE LOOK UP, el node_rank es", node_rank
+        # print "\n\n"
 
         # Recibir pedido de LOOK-UP.
         data = self.__comm.recv(source=node_rank, tag=TAG_CONSOLE_LOOKUP_RESP)
 
-        print "\n\n LLEGO RECIBI PEDIDO DE LOOK UP \n\n"
+        # print "\n\n LLEGO RECIBI PEDIDO DE LOOK UP \n\n"
 
         if data == file_name:
             print(">>> Archivo recibido correctamente!")
