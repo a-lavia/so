@@ -1,0 +1,22 @@
+j 1
+j 2
+j 3
+j 4
+j 5
+s 1 a
+s 2 b
+s 3 c
+s 4 ddd
+s 5 eee
+
+l 1 a
+l 2 b
+l 3 c
+l 4 ddd
+l 5 eee
+l 5 a
+l 4 b
+l 3 c
+l 2 ddd
+l 1 eee
+q
