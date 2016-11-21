@@ -3,6 +3,7 @@
 import hashlib
 import random
 import sys
+import time
 
 from mpi4py import MPI
 
@@ -32,7 +33,7 @@ TAG_NODE_LOOKUP_RESP = 26
 
 TAG_NODE_STORE_REQ = 27
 
-# Tamaño de mi tabla 
+# Tamaño de mi tabla
 K = 8
 
 def tag_to_string(tag):
@@ -52,6 +53,8 @@ def tag_to_string(tag):
         TAG_NODE_LOOKUP_REQ: "TAG_NODE_LOOKUP_REQ",
         TAG_NODE_LOOKUP_RESP: "TAG_NODE_LOOKUP_RESP",
         TAG_NODE_STORE_REQ: "TAG_NODE_STORE_REQ",
+
+
     }
 
     return name_map[tag]
@@ -99,7 +102,7 @@ class Node(object):
         # nodes = dict(node_hash: node_rank)
 
         # Calculo máximo.
-        dist_max = sys.minint
+        dist_max = 0
         for node_hash in nodes:
             if distance(node_hash, thing_hash) > dist_max:
                 dist_max = distance(node_hash, thing_hash)
@@ -124,8 +127,11 @@ class Node(object):
                 del self.__routing_table[node_max_hash]
                 self.__routing_table[node_hash] = node_rank
 
-    # Le pregunta a los nodos mínimos por el hash 
+    # Le pregunta a los nodos mínimos por el hash
+    # Hace la pregunta de forma recursiva (a los nodos de mínima distancia
+    # que se le pasan y a que van siendo mínima de los que obtiene de consultarle a cada uno
     def __find_nodes(self, contact_nodes, thing_hash):
+
     # contact_nodes = [(node_hash, node_rank)]
     # thing_hash = data (?)
     # BFS / DFS
@@ -147,9 +153,11 @@ class Node(object):
         processed = set()
         nodes_min = {}
 
+    ###################
+    # Completar
+    ###################
         # podria ser yo el mas cercano
-        mas_cercanos = {}
-        mas_cercanos[self.__hash] = self.__rank
+        nodes_min[self.__hash] = self.__rank
 
         # me agrego a mi mismo al conjunto de procesados
         processed.add(self.__rank)
@@ -163,75 +171,62 @@ class Node(object):
                 # tomo la respuesta del nodo
                 res = self.__comm.recv(source=node_rank, tag=TAG_NODE_FIND_NODES_RESP)
                 queue.extend(res)
-            else:
-                mas_cercanos[node_hash] = node_rank
-
-        # busco los mas cercanos y los devuelvo
-        for nhash, nrank in self.__get_mins(mas_cercanos, thing_hash):
-            nodes_min[nhash] = nrank
+                
+                # Agrego los mas cercanos de node_rank
+                for (nhash, nrank) in res:
+                    nodes_min[nhash] = nrank
 
         return nodes_min
 
-
-    # casi igual a find_node pero agrega los archivos necesarios al hacer join. Pueden hacerlo en un solo método
+    # casi igual a find_node pero cada nodo va borrando los archivos que ya estarían más cercano al find nodes
+    # o copiando los mismos si es igual la distaancia. Además le devuelve los archivos 
+    # que le correspondería tener a él
     def __find_nodes_join(self, contact_nodes):
-        # Camino minimo
-        # devuelve vecinos y sus archivos (file names) -> los file names sirven para ver cuales son los archivos con los que me deberia quedar son los mas cercanos
-        #                                                   hay que guardarlos dentro de files
-        # siempre devuelve la lista, no ok, si devuelve vacio es porque el mas cercano es el que se lo mande (fijarse si no agregarse)
-        
-        # pregunto al primer nodo y con sus valores  hago la cola
-        # si me envian archivos los tengo que guardar y la de nodos(mas cerca de mi que el nodo al que le pregunte)
+    # Camino minimo
+    # devuelve vecinos y sus archivos (file names) -> los file names sirven para ver cuales son los archivos con los que me deberia quedar son los mas cercanos
+    #                                                   hay que guardarlos dentro de files
+    # siempre devuelve la lista, no ok, si devuelve vacio es porque el mas cercano es el que se lo mande (fijarse si no agregarse)
+    
+    # pregunto al primer nodo y con sus valores  hago la cola
+    # si me envian archivos los tengo que guardar y la de nodos(mas cerca de mi que el nodo al que le pregunte)
 
-        # con tag store envio los archivos al nodo (en un mensaje aparte), no espero nada.
+    # con tag store envio los archivos al nodo (en un mensaje aparte), no espero nada.
 
         nodes_min = set()
+    ################
+    # Completar
+    ################
         processed = set()
         queue = contact_nodes
         mas_cercanos = {}
 
-        node_hash, node_rank = queue[0]
-
-        mas_cercanos[node_hash] = node_rank
-
-        # node_hash, node_rank = contact_nodes
-        print "\nCONTACT NODES \n", contact_nodes
-        self.__comm.send(contact_nodes[0], dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
-       
-        queue.pop()
-
-        # files es un dicc con los archivos de node del que soy el nuevo nodo más cercano
-        (data, files) = self.__comm.recv(source=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
-        
-        # Envio los files recibidos al nodo que se agrega
-        for f in files:
-            self.__comm.send(f, dest=node_rank, tag=TAG_NODE_STORE_REQ)
-
-        # Me quedo con los mas cercanos y sigo buscando con ellos
-        for node in self.__get_mins(data, node_hash):
-            queue.append(node)
+        # Ya fui procesado
+        processed.add(self.__rank)
 
         while len(queue) > 0:
             nhash, nrank = queue.pop()                                 
             if nrank not in processed:
                 processed.add(nrank)
                 # pido los valores mas cercanos al hash
-                self.__comm.send(node_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
+                self.__comm.send(node_hash, dest=nrank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
                 # tomo la respuesta del nodo
                 
                 # res = (minimo, files)
                 res = self.__comm.recv(source=nrank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
                 queue.extend(res[0])
+                for fhash, fpath in res[1].items():
+                    self.__files[fhash] = fpath
 
-                # Envio los files recibidos al nodo que se agrega
-                for f in res[2]:
-                    self.__comm.send(f, dest=node_rank, tag=TAG_NODE_STORE_REQ)
-            else:
-                mas_cercanos[node_hash] = node_rank
+                for nhash, nrank in res[0]:
+                    if nrank != self.__rank:
+                        mas_cercanos[nhash] = nrank
 
         # busco los mas cercanos y los devuelvo
-        for n in self.__get_mins(mas_cercanos, thing_hash):
+        for n in mas_cercanos.items():
             nodes_min.add(n)
+
+        # for n in self.__get_mins(mas_cercanos, thing_hash):
+        #     nodes_min.add(n)
 
         return nodes_min
 
@@ -246,6 +241,16 @@ class Node(object):
             if distance (file_hash, self.__hash) > distance (file_hash, node_hash):
                 files[file_hash] = file_name
         return files
+
+    def __get_equal_files(self, node_hash):
+        # devuelve los archivos en self.__files que son igual de cercanos a node_hash que a self.__hash
+        files = {}
+        print self.__files
+        for file_hash, file_name in self.__files.items():
+            if distance (file_hash, self.__hash) == distance (file_hash, node_hash):
+                files[file_hash] = file_name
+        return files
+
 
 
     # Handlers del protocolo CONSOLE.
@@ -276,16 +281,19 @@ class Node(object):
 
             # Propago consulta de find nodes a traves de los minimos de mi nodo
             # de contacto inicial.
-            nodes_min = self.__find_nodes_join(data)
+            nodes_min = self.__find_nodes_join(data)  
+            # expando con un dato que sea la distancia.
+            nodes_min = [(node_hash, node_rank, distance(node_hash, self.__hash)) for node_hash, node_rank in nodes_min]
 
-            # Convierto set a dict.
-            nodes_min = {node_hash: node_rank for node_hash, node_rank in nodes_min}
+            # obtengo los K mínimos
+            nodes_min = sorted(nodes_min, key=lambda x: x[2])
 
-            # Obtengo el nodo más cercano de todos.
-            nodes_min = self.__get_mins(nodes_min, self.__hash)
+            ## Convierto set a dict.
+            #nodes_min = {node_hash: node_rank for node_hash, node_rank, distancia in nodes_min}
 
-            # Me quedo con los K más cercanos.
-            for index, (node_hash, node_rank) in enumerate(nodes_min):
+
+            # Me quedo con los K más cercanos. 
+            for index, (node_hash, node_rank, distancia) in enumerate(nodes_min):
                 if index < K:
                     self.__routing_table[node_hash] = node_rank
                 else:
@@ -299,6 +307,8 @@ class Node(object):
 
         print("[+] Inicializacion completa del nodo '{:02d}'".format(self.__rank))
 
+    #  Si soy el nodo de menor distancia, lo guardo yo, si tengo vecinos de igual distancia, tambien se los
+    # mando a guardar a ellos. Si tengo alguno de menor distancia, se lo mando a guardar.
     def __handle_console_store(self, data):
         # IMPORTANTE El store va a generar MSJs entre nodos el cual necesita
         # VARIAS respuesta que se procesa en este ciclo (más abajo).
@@ -313,13 +323,24 @@ class Node(object):
 
         # Propago consulta de find nodes a traves de mis minimos locales.
         nodes_min = self.__find_nodes(nodes_min_local, file_hash)
-	########################
-	#     Completar
-	########################store
-    # tengo que enviar un agregate aca.
- 
-            # Envio el archivo a los nodos más cercanos
+    ########################
+    #     Completar
+    ########################
 
+        print nodes_min
+        print "\nimprimo el dic\n"
+
+        # tengo que enviar un agregate aca.
+        # Envio el archivo a los nodos más cercanos
+        for min_hash, min_rank in nodes_min.items():
+            print min_hash, min_rank
+            self.__comm.send(data, dest=min_rank, tag=TAG_NODE_STORE_REQ)
+
+        print "\n termino de imprimir\n\n"
+
+
+    # Busca el archivo entre los más cercanos, a partir del nodo fuente. Les va consultando a cada uno los más cercanos
+    # con __finde_nodes
     def __handle_console_look_up(self, source, data):
         # IMPORTANTE El store va a generar MSJs entre nodos el cual necesita
         # VARIAS respuesta que se procesa en este ciclo (más abajo).
@@ -334,13 +355,21 @@ class Node(object):
         nodes_min = self.__find_nodes(nodes_min_local, file_hash)
         # quien es el mas cercano a ese nodo? hasta que te dice YO (el unico que esta)
 
+    ########################
+    #     Completar
+    ########################
+        print "\n\n LLEGO ENTRO HANDLE CONSOLE LOOK UP \n\n"
 
-	########################
-	#     Completar
-	########################
-
-
-
+        for min_hash, min_rank in nodes_min.items():
+            self.__comm.send(file_hash, dest=min_rank, tag=TAG_NODE_LOOKUP_REQ)
+            
+            print "\n\n LLEGO RECIBI DE HANDLE NODE LOOK UP \n\n"
+            
+            res = self.__comm.recv(source=min_rank, tag=TAG_NODE_LOOKUP_RESP)
+            
+            if len(res) != 0:
+                data = res
+                break
 
         # Devuelvo el archivo.
         self.__comm.send(data, dest=source, tag=TAG_CONSOLE_LOOKUP_RESP)
@@ -364,15 +393,16 @@ class Node(object):
         # Agrego ARBITRARIAMENTE al nodo actual.
         nodes_min.append((self.__hash, self.__rank))
 
-        # Busco entre mis archivos los más cercanos a node que a mí
-        files = self.__get_closest_files(node_hash)
-
+        # Busco entre mis archivos los más cercanos a node que a mí.
+        files_menor = self.__get_closest_files(node_hash)
+        files_menor_igual = self.__get_equal_files(node_hash)
+        files_menor_igual.update(files_menor)
         # Envio los nodos más cercanos y los archivos más cercanos a node que tenía yo
-        data = (nodes_min, files)
+        data = (nodes_min, files_menor_igual)
         self.__comm.send(data, dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
 
         # Borro de mis archivos los más cercanos a node
-        self.__files = {k:v for k,v in self.__files.items() if k not in files.keys()}
+        self.__files = {k:v for k,v in self.__files.items() if k not in files_menor.keys()}
 
         # Actualizo la routing table.
         self.__update_routing_table(node_hash, node_rank)
@@ -404,7 +434,15 @@ class Node(object):
         print("[D] [{:02d}] [NODE|LOOK-UP] Buscando archivo con hash '{}'".format(self.__rank, file_hash))
         print("[D] [{:02d}] [NODE|LOOK-UP] Tabla de archivos: {}".format(self.__rank, self.__files))
 
-        data = self.__files[file_hash]
+        # Esto tira un exception si no esta!
+        # data = self.__files[file_hash]
+        # Devuelvo un booleano si no está
+        if file_hash in self.__files:
+            data = self.__files[file_hash]
+        else:
+            data = False
+
+        print "\n\n LLEGO HANDLE NODE LOOK UP \n\n"
         self.__comm.send(data, dest=source, tag=TAG_NODE_LOOKUP_RESP)
 
     def __handle_node_store_req(self, data):
@@ -413,6 +451,7 @@ class Node(object):
 
         print("[D] [{:02d}] [NODE|STORE] Almacenando archivo '{}' con hash '{}'".format(self.__rank, file_name, file_hash))
 
+        print "\n\n LO AGREGO \n\n"
         self.__files[file_hash] = file_name
 
         print("[D] [{:02d}] [NODE|STORE] Tabla de archivos: {}".format(self.__rank, self.__files))
@@ -426,6 +465,12 @@ class Node(object):
             data = self.__comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             tag = status.Get_tag()
             source = status.Get_source()
+            print "\n\n SOY NODO Y RECIBI UN MENSAJE \n\n"
+
+            if tag == TAG_NODE_LOOKUP_REQ:
+                print "\n\n SOY NODO Y RECIBI lookup req \n\n"
+            elif tag == TAG_CONSOLE_STORE_REQ:
+                print "\n\n SOY NODO Y RECIBI STORE REQ\n\n"
 
             print("[D] [{:02d}] recv | data: {}, source: {}, tag: {}".format(self.__rank, data, source, tag_to_string(tag)))
 
@@ -461,6 +506,7 @@ class Node(object):
                 self.__handle_node_look_up(source, data)
                 continue
             elif tag == TAG_NODE_STORE_REQ:
+                print "\n\n SOY UN TAG_NODE_STORE_REQ\n\n"
                 self.__handle_node_store_req(data)
                 continue
 
@@ -488,6 +534,8 @@ class Console(object):
                 self.__handle_store(*args)
             elif command == "look-up":
                 self.__handle_look_up(*args)
+            elif command == "test":
+                self.__handle_test(*args)
             else:
                 self.__print_usage()
                 continue
@@ -514,6 +562,10 @@ class Console(object):
             node_rank = int(tokens[1])
             file_name = tokens[2]
             args = [node_rank, file_name]
+        elif tokens[0] in ["t", "test"]:
+            command = "test"
+            commands_file = tokens[1]
+            args = [commands_file]
         else:
             command = None
             args = []
@@ -543,8 +595,11 @@ class Console(object):
         """
         print(">>> Almacenando archivo '{}' en nodo '{:02d}'...".format(file_name, node_rank))
 
+        print "\n\n almacenando sarasa\n\n"
+
         data = (hash_fn(file_name), file_name)
         self.__comm.send(data, dest=node_rank, tag=TAG_CONSOLE_STORE_REQ)
+        print "\n\n la sarasa se envió\n\n"
 
     def __handle_look_up(self, node_rank, file_name):
         """Procesa comando: 'look-up <node_rank> <file_name>'.
@@ -555,13 +610,40 @@ class Console(object):
         data = hash_fn(file_name)
         self.__comm.send(data, dest=node_rank, tag=TAG_CONSOLE_LOOKUP_REQ)
 
+        print "\n\n LLEGO DENTRO HANDLE LOOK UP, el node_rank es", node_rank
+        print "\n\n"
+
         # Recibir pedido de LOOK-UP.
         data = self.__comm.recv(source=node_rank, tag=TAG_CONSOLE_LOOKUP_RESP)
+
+        print "\n\n LLEGO RECIBI PEDIDO DE LOOK UP \n\n"
 
         if data == file_name:
             print(">>> Archivo recibido correctamente!")
         else:
             print(">>> Error al recibir el archivo: {}".format(data))
+
+    def __handle_test(self, commands_file):
+        """Procesa comando: 'test <commands_file>'.
+        """
+        print(">>> Abriendo archivo de comandos para test {}...".format(commands_file))
+        f = open(commands_file, 'r')
+
+        i = 1
+        for line in f:
+            print("Comando {}> {}".format(i, line))
+            command, args = self.__parse_command(line)
+            if command == "quit":
+                self.__handle_quit(*args)
+            elif command == "join":
+                self.__handle_join(*args)
+            elif command == "store":
+                self.__handle_store(*args)
+            elif command == "look-up":
+                self.__handle_look_up(*args)
+            i = i+1
+            time.sleep(1)
+
 
     def __print_usage(self):
         usage = """
@@ -570,6 +652,7 @@ class Console(object):
             * s|store <node_rank> <file_name>
             * l|look-up <node_rank> <file_name>
             * q|quit
+            * t|test <commands_file>
         """
         print(usage)
 
@@ -584,6 +667,7 @@ if __name__ == "__main__":
         console = Console(rank)
         console.run()
     else:
-        node_id = int(random.uniform(0, 2**K))
+        # node_id = int(random.uniform(0, 2**K))
+        node_id = rank 
         node = Node(rank, node_id)
         node.run()
