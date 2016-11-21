@@ -330,10 +330,11 @@ class Node(object):
         print nodes_min
         print "\nimprimo el dic\n"
 
-        # tengo que enviar un agregate aca.
+        # obtengo los de menor distancia a file_hash
+        nodes_min = self.__get_mins(nodes_min, file_hash)
+
         # Envio el archivo a los nodos más cercanos
-        for min_hash, min_rank in nodes_min.items():
-            print min_hash, min_rank
+        for min_hash, min_rank in nodes_min:
             self.__comm.send(data, dest=min_rank, tag=TAG_NODE_STORE_REQ)
 
         print "\n termino de imprimir\n\n"
@@ -360,19 +361,19 @@ class Node(object):
     ########################
         print "\n\n LLEGO ENTRO HANDLE CONSOLE LOOK UP \n\n"
 
+        res = False
         for min_hash, min_rank in nodes_min.items():
-            self.__comm.send(file_hash, dest=min_rank, tag=TAG_NODE_LOOKUP_REQ)
+            if not res and min_rank != self.__rank:
+                self.__comm.send(file_hash, dest=min_rank, tag=TAG_NODE_LOOKUP_REQ)
+                print "\n\n LLEGO RECIBI DE HANDLE NODE LOOK UP \n\n"
+                res = self.__comm.recv(source=min_rank, tag=TAG_NODE_LOOKUP_RESP)
             
-            print "\n\n LLEGO RECIBI DE HANDLE NODE LOOK UP \n\n"
-            
-            res = self.__comm.recv(source=min_rank, tag=TAG_NODE_LOOKUP_RESP)
-            
-            if len(res) != 0:
-                data = res
-                break
+            elif min_rank == self.__rank and file_hash in self.__files:
+                res = self.__files[file_hash]
+
 
         # Devuelvo el archivo.
-        self.__comm.send(data, dest=source, tag=TAG_CONSOLE_LOOKUP_RESP)
+        self.__comm.send(res, dest=source, tag=TAG_CONSOLE_LOOKUP_RESP)
 
     def __handle_console_finish(self, data):
         self.__finished = True
