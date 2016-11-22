@@ -159,25 +159,35 @@ class Node(object):
         # me agrego a mi mismo al conjunto de procesados
         processed.add(self.__rank)
 
-        while len(queue) > 0:
-            node_hash, node_rank = queue.pop()
-            if node_rank not in processed:
-                processed.add(node_rank)
-                
-                # pido los valores mas cercanos al hash
-                req = self.__comm.isend(thing_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_REQ)
-                req.wait()
+        termino = False
+        faltan_recibir = 0
+        nuevo_enviado = False
 
+        while not termino:
+
+            while len(queue) > 0:
+                node_hash, node_rank = queue.pop()
+                if node_rank not in processed:
+                    processed.add(node_rank)
+
+                    # pido los valores mas cercanos al hash
+                    req = self.__comm.isend(thing_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_REQ)
+                    req.wait()
+                    faltan_recibir += 1
+
+            while faltan_recibir > 0:
                 # tomo la respuesta del nodo
-                req = self.__comm.irecv(source=node_rank, tag=TAG_NODE_FIND_NODES_RESP)
-                res = req.wait()
-
-
+                res = self.__comm.irecv(source=MPI.ANY_SOURCE, tag=TAG_NODE_FIND_NODES_RESP)
+                # respuestas.append(res)
                 queue.extend(res)
-                
+                faltan_recibir -= 1
+
                 # Agrego los mas cercanos de node_rank
                 for (nhash, nrank) in res:
                     nodes_min[nhash] = nrank
+
+            if len(queue) == 0 and faltan_recibir == 0:
+                termino = True
 
         return nodes_min
 
@@ -368,7 +378,7 @@ class Node(object):
                 self.__comm.send(file_hash, dest=min_rank, tag=TAG_NODE_LOOKUP_REQ)
                 # print "\n\n LLEGO RECIBI DE HANDLE NODE LOOK UP \n\n"
                 res = self.__comm.recv(source=min_rank, tag=TAG_NODE_LOOKUP_RESP)
-            
+
             elif min_rank == self.__rank and file_hash in self.__files:
                 res = self.__files[file_hash]
 
