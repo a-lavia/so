@@ -1,0 +1,124 @@
+\documentclass[10pt, a4paper, spanish]{article}
+\usepackage[paper=a4paper, left=1.5cm, right=1.5cm, bottom=1.5cm, top=3.5cm]{geometry}
+\usepackage[spanish]{babel}
+\selectlanguage{spanish}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{indentfirst}
+\usepackage{fancyhdr}
+\usepackage{latexsym}
+\usepackage{lastpage}
+\usepackage[colorlinks=true, linkcolor=blue]{hyperref}
+
+\usepackage{listings}
+\usepackage{listingsutf8}
+\usepackage{color}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{inputencoding=utf8/latin1,
+	language=C++,
+	basicstyle=\ttfamily,
+	keywordstyle=\bfseries\color{blue},
+	stringstyle=\color{red}\ttfamily,
+	commentstyle=\color{mygreen}\ttfamily,
+	morecomment=[l][\color{magenta}]{\#},
+	% numbers=left,
+	numberstyle=\color{gray},
+	backgroundcolor=\color{backcolour},   
+	keywordstyle=\color{magenta},
+	breakatwhitespace=false,
+	breaklines=true,
+	captionpos=b,
+	keepspaces=true,
+	numbersep=5pt,
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	tabsize=3,
+	inputencoding=utf8/latin1
+}
+
+% Para que tenga acentos el environment lstlisting
+\lstset{
+     literate=%
+         {á}{{\'a}}1
+         {í}{{\'i}}1
+         {é}{{\'e}}1
+         {ý}{{\'y}}1
+         {ú}{{\'u}}1
+         {ó}{{\'o}}1
+         {ě}{{\v{e}}}1
+         {š}{{\v{s}}}1
+         {č}{{\v{c}}}1
+         {ř}{{\v{r}}}1
+         {ž}{{\v{z}}}1
+         {ď}{{\v{d}}}1
+         {ť}{{\v{t}}}1
+         {ň}{{\v{n}}}1                
+         {ů}{{\r{u}}}1
+         {Á}{{\'A}}1
+         {Í}{{\'I}}1
+         {É}{{\'E}}1
+         {Ý}{{\'Y}}1
+         {Ú}{{\'U}}1
+         {Ó}{{\'O}}1
+         {Ě}{{\v{E}}}1
+         {Š}{{\v{S}}}1
+         {Č}{{\v{C}}}1
+         {Ř}{{\v{R}}}1
+         {Ž}{{\v{Z}}}1
+         {Ď}{{\v{D}}}1
+         {Ť}{{\v{T}}}1
+         {Ň}{{\v{N}}}1                
+         {Ů}{{\r{U}}}1    
+}
+
+\usepackage[Algoritmo]{algorithm}
+\usepackage{algpseudocode}
+\algrenewcommand\textproc{}% Used to be \textsc Para que el nombre de la función no sea en mayusculas
+\usepackage{verbatim}
+
+\usepackage{tabularx} % tablas copadas
+% \usepackage{graphicx}
+\usepackage{amsmath, amsthm, amssymb}
+
+%\usepackage{makeidx}
+\usepackage{paralist} %itemize inline
+\usepackage[table]{xcolor}
+\usepackage{caratula/caratula}
+
+\usepackage{float}
+\usepackage{amsfonts}
+\usepackage{sectsty}
+\usepackage{charter}
+\usepackage{wrapfig}
+
+\usepackage{caption}
+%el de arriba funciona si no esta, el de abajo quite el "Figura #" de las imagenes
+\captionsetup[figure]{labelformat=empty}
+
+\begin{document}
+
+\titulo{Trabajo práctico III}
+
+\subtitulo{Sistemas Distribuidos}
+
+\materia{Sistemas Operativos}
+
+\integrante{Cámera, Joel Esteban}{257/14}{joel.e.camera@gmail.com}
+\integrante{Lavia, Alejandro Norberto}{43/11}{lavia.alejandro@gmail.com}
+\integrante{Guttman, Martín David \textcolor{white}{gato}}{686/14}{mdg\_92@yahoo.com.ar}
+
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+\input{intro.tex}
+
+\end{document}
