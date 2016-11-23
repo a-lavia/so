@@ -132,23 +132,6 @@ class Node(object):
     # que se le pasan y a que van siendo mínima de los que obtiene de consultarle a cada uno
     def __find_nodes(self, contact_nodes, thing_hash):
 
-    # contact_nodes = [(node_hash, node_rank)]
-    # thing_hash = data (?)
-    # BFS / DFS
-    # tengo que buscar uno de la red
-    # Varios nodos pueden tener el mismo archivo y devuelven los que tienen esa distancia
-    # hace lo mismo que find_nodes_join pero con los minimos
-    # te quedas con los k mas cercanos o los k minimos
-    # cuando me envian los valores los agregos a la cola
-    # traigo vecinos del uno y y luego le pido los vecinos
-    # me fijo si no le pregunte dos veces al mismo.
-    # luego filtro los mas cercanos al hash
-    # tengo que reconstruir toda la red
-    # me fijo de los k mas cercanos y voy por el minimo.
-
-    # NO BLOQUEANTE -> PREGUNTO A TODOS Y HAGO UN WAIT HASTA QUE ME RESPONDA
-    # EL QUE NECESITO
-
         queue = contact_nodes
         processed = set()
         nodes_min = {}
@@ -159,34 +142,24 @@ class Node(object):
         # me agrego a mi mismo al conjunto de procesados
         processed.add(self.__rank)
 
-        termino = False
-        faltan_recibir = 0
+        while len(queue) > 0:
+            node_hash, node_rank = queue.pop()
+            if node_rank not in processed:
+                processed.add(node_rank)
 
-        while not termino:
-
-            if len(queue) == 0 and faltan_recibir == 0:
-                termino = True
-
-            while len(queue) > 0:
-                node_hash, node_rank = queue.pop()
-                if node_rank not in processed:
-                    processed.add(node_rank)
-
-                    # pido los valores mas cercanos al hash
-                    req = self.__comm.isend(thing_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_REQ)
-                    req.wait()
-                    faltan_recibir += 1
-
-            while faltan_recibir > 0:
-                # tomo la respuesta del nodo
-                req = self.__comm.irecv(source=MPI.ANY_SOURCE, tag=TAG_NODE_FIND_NODES_RESP)
+                # pido los valores mas cercanos al hash
+                req = self.__comm.isend(thing_hash, dest=node_rank, tag=TAG_NODE_FIND_NODES_REQ)
                 res = req.wait()
-                queue.extend(res)
-                faltan_recibir -= 1
 
-                # Agrego los mas cercanos de node_rank
-                for (nhash, nrank) in res:
-                    nodes_min[nhash] = nrank
+        while self.__comm.iprobe() > 0:
+            # tomo la respuesta del nodo
+            req = self.__comm.irecv(source=MPI.ANY_SOURCE, tag=TAG_NODE_FIND_NODES_RESP)
+            res = req.wait()
+            queue.extend(res)
+
+            # Agrego los mas cercanos de node_rank
+            for (nhash, nrank) in res:
+                nodes_min[nhash] = nrank
 
 
         return nodes_min
@@ -213,69 +186,34 @@ class Node(object):
 
         # Ya fui procesado
         processed.add(self.__rank)
-        
-        termino = False
-        faltan_recibir = 0
+                    
+        while len(queue) > 0:
+            node_hash, node_rank = queue.pop()                                 
+            if node_rank not in processed:
+                processed.add(node_rank)
+                # pido los valores mas cercanos a mi para agregarlos
+                req = self.__comm.isend((self.__hash,self.__rank), dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
+                req.wait()
 
-        while not termino:
-            
-            while len(queue) > 0:
-                node_hash, node_rank = queue.pop()                                 
-                if node_rank not in processed:
-                    processed.add(node_rank)
-                    # pido los valores mas cercanos a mi para agregarlos
-                    req = self.__comm.isend((self.__hash,self.__rank), dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
-                    req.wait()
-                    faltan_recibir += 1
+        while self.__comm.iprobe() > 0:
+            # tomo la respuesta del nodo
+            # res = (minimo, files)
+            req = self.__comm.irecv(source=MPI.ANY_SOURCE, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
+            res =  req.wait()
+            minimo = res[0]
+            files = res[1]
 
-            while faltan_recibir > 0:
-                # tomo la respuesta del nodo
-                # res = (minimo, files)
-                req = self.__comm.irecv(source=MPI.ANY_SOURCE, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
-                res =  req.wait()
-                minimo = res[0]
-                files = res[1]
+            queue.extend(minimo)
 
-                queue.extend(minimo)
-                faltan_recibir -= 1
+            for fhash, fpath in res[1].items():
+                self.__files[fhash] = fpath
 
-                for fhash, fpath in res[1].items():
-                    self.__files[fhash] = fpath
+            for nhash, nrank in res[0]:
+                if nrank != self.__rank:
+                    mas_cercanos[nhash] = nrank
 
-                for nhash, nrank in res[0]:
-                    if nrank != self.__rank:
-                        mas_cercanos[nhash] = nrank
-
-            if len(queue) == 0 and faltan_recibir == 0:
-                termino = True
-
-        # while len(queue) > 0:
-        #     nhash, nrank = queue.pop()
-        #     if nrank not in processed:
-        #         processed.add(nrank)
-        #         # pido los valores mas cercanos a mi para agregarlos
-        #         req = self.__comm.isend((self.__hash,self.__rank), dest=nrank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
-        #         req.wait()                
-
-        #         # tomo la respuesta del nodo
-        #         # res = (minimo, files)
-        #         req = self.__comm.irecv(source=nrank, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
-        #         res = req.wait()
-
-        #         queue.extend(res[0])
-        #         for fhash, fpath in res[1].items():
-        #             self.__files[fhash] = fpath
-
-        #         for node_hash, node_rank in res[0]:
-        #             if node_rank != self.__rank:
-        #                 mas_cercanos[node_hash] = node_rank
-
-        # busco los mas cercanos y los devuelvo
         for n in mas_cercanos.items():
             nodes_min.add(n)
-
-        # for n in self.__get_mins(mas_cercanos, thing_hash):
-        #     nodes_min.add(n)
 
         return nodes_min
 
