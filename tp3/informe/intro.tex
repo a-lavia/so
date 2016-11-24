@@ -2,9 +2,9 @@
 En este informe presentaremos los algoritmos realizados para la implementación de una \textbf{DHT Kademlia} simplificada, para ello utilizamos la interfaz \textbf{MPI} que nos servirá para pasar mensajes a través de los nodos que componen nuestra red.
 
 \section{Ejercicio 1}
+Para las implementaciones de \textbf{\_\_find\_nodes}, \textbf{\_\_find\_nodes\_join} \textbf{\_\_handle\_console\_store} y \textbf{\_\_handle\_console\_look\_up} preguntamos a los nodos mínimos por el hash utilizando las funciones \textbf{MPI.COMM\_WORLD.send()} y recibimos la respuesta con \textbf{MPI.COMM\_WORLD.recv()} estas funciones de MPI son bloqueantes, las implementaciones son las siguientes.
 
 \subsection{\_\_find\_nodes}
-Para la implementación de \textbf{\_\_find\_nodes} preguntamos a los nodos mínimos por el hash utilizando \textbf{MPI.COMM\_WORLD.send()} y recibimos la respuesta con \textbf{MPI.COMM\_WORLD.recv()} estas funciones de MPI son bloqueantes, el código es el siguiente:
 
 \begin{lstlisting}
 def __find_nodes(self, contact_nodes, thing_hash):
@@ -129,10 +129,8 @@ def __handle_console_look_up(self, source, data):
     self.__comm.send(res, dest=source, tag=TAG_CONSOLE_LOOKUP_RESP)
 \end{lstlisting}
 
-\section{Ejercicio 2}
-
 \section{Ejercicio 3}
-Para la implementación no bloqueante de \textbf{\_\_find\_nodes} y  \textbf{\_\_find\_nodes\_join} reemplazamos las funciones \textbf{MPI.COMM\_WORLD.send()} y \textbf{MPI.COMM\_WORLD.recv()} por la versión no bloqueante de las mismas, estas son \textbf{MPI.COMM\_WORLD.isend()} y \textbf{MPI.COMM\_WORLD.irecv()} esta retornan de inmediato sin bloquearse y luego hacemos uso la función \textbf{MPI.COMM\_WORLD.wait()} que si espera de manera bloqueante el mensaje. Primero enviamos todos los mensajes y luego mediante la función \textbf{MPI.COMM\_WORLD.iprobe()} que indica si hay o no mensajes de manera no bloqueante los vamos recibiendo. El código es el siguiente:
+Para la implementación no bloqueante de \textbf{\_\_find\_nodes} y  \textbf{\_\_find\_nodes\_join} reemplazamos las funciones \\ \textbf{MPI.COMM\_WORLD.send()} y \textbf{MPI.COMM\_WORLD.recv()} por la versión no bloqueante de las mismas, estas son \textbf{MPI.COMM\_WORLD.isend()} y \textbf{MPI.COMM\_WORLD.irecv()} esta retornan de inmediato sin bloquearse y luego hacemos uso la función \textbf{MPI.COMM\_WORLD.wait()} que si espera de manera bloqueante el mensaje. Primero enviamos todos los mensajes y luego mediante la función \textbf{MPI.COMM\_WORLD.iprobe()} que indica si hay o no mensajes de manera no bloqueante los vamos recibiendo.
 
 \subsection{\_\_find\_nodes}
 \begin{lstlisting}
@@ -213,6 +211,4 @@ def __find_nodes_join(self, contact_nodes):
 
     return nodes_min
 \end{lstlisting}
-
-\section{Ejercicio 4}
 

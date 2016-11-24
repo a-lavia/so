@@ -1,19 +1,24 @@
 j 1
 j 2
 j 3
-j 4
-j 5
 
 s 1 a
 s 2 b
 s 3 c
+
+j 4
+j 5
+j 6
+
 s 4 d
 s 5 e
+s 6 f
 
 l 1 a
 l 2 b
 l 3 c
 l 4 d
 l 5 e
+l 6 f
 
 q
