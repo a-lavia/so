@@ -130,18 +130,17 @@ class Node(object):
 	# Le pregunta a los nodos mínimos por el hash
 	# Hace la pregunta de forma recursiva (a los nodos de mínima distancia
 	# que se le pasan y a que van siendo mínima de los que obtiene de consultarle a cada uno
+	
 	def __find_nodes(self, contact_nodes, thing_hash):
 		queue = contact_nodes
 		processed = set()
-		nodes_min = {}
 		min_dist = sys.maxint
-
 		# podria ser yo el mas cercano
-		nodes_min[self.__hash] = self.__rank
+		nodes_min = {self.__hash: self.__rank}
 		# me agrego a mi mismo al conjunto de procesados
 		processed.add(self.__rank)
-		
 		cant_enviados = 0
+		
 		while len(queue) > 0 or cant_enviados > 0:
 			# envio a todos los nodos que tengo en queue que no fueron enviados
 			while len(queue) > 0:
@@ -161,53 +160,30 @@ class Node(object):
 				# Agrego los mas cercanos de node_rank
 				nodes_min[nhash] = nrank
 
-		# nodes_min = self.__get_mins(nodes_min, thing_hash)
-		# no funciona get_mins por como utiliza los parametros
-		# hago la operación a mano aquí con la minima distancia calculada
-		nodes_min_dist = {}
-
-		for nhash in nodes_min.iterkeys():
-			if min_dist >= distance(thing_hash, nhash):
-				min_dist = distance(thing_hash, nhash)
-
-		for nhash in nodes_min.iterkeys():
-			if distance(thing_hash, nhash) == min_dist:
-				nodes_min_dist[nhash] = nodes_min[nhash]
-
-		return nodes_min_dist
+		return nodes_min
 
 	# casi igual a find_node pero cada nodo va borrando los archivos que ya estarían más cercano al find nodes
 	# o copiando los mismos si es igual la distaancia. Además le devuelve los archivos 
 	# que le correspondería tener a él
-	def __find_nodes_join(self, contact_nodes):
-	# Camino minimo
-	# devuelve vecinos y sus archivos (file names) -> los file names sirven para ver cuales son los archivos con los que me deberia quedar son los mas cercanos
-	#													hay que guardarlos dentro de files
-	# siempre devuelve la lista, no ok, si devuelve vacio es porque el mas cercano es el que se lo mande (fijarse si no agregarse)
-	
-	# pregunto al primer nodo y con sus valores  hago la cola
-	# si me envian archivos los tengo que guardar y la de nodos(mas cerca de mi que el nodo al que le pregunte)
 
-	# con tag store envio los archivos al nodo (en un mensaje aparte), no espero nada.
+	def __find_nodes_join(self, contact_nodes):
 		nodes_min = set()
 		processed = set()
 		queue = contact_nodes
 		mas_cercanos = {}
-		cant_enviados = 0
-
 		# Ya fui procesado
 		processed.add(self.__rank)
+		cant_enviados = 0
 
 		while len(queue) > 0 or cant_enviados > 0:
 			# envio a todos los nodos que tengo en queue que no fueron enviados
-			for node in queue:
+			while len(queue) > 0:
 				node_hash, node_rank = queue.pop()
 				if node_rank not in processed:
 					processed.add(node_rank)
 					# pido los valores mas cercanos a mi para agregarlos
 					self.__comm.isend((self.__hash, self.__rank), dest=node_rank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
 					cant_enviados += 1
-
 			# res = (minimo, files)
 			res = self.__comm.recv(source=MPI.ANY_SOURCE, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
 			cant_enviados -= 1
@@ -216,7 +192,6 @@ class Node(object):
 			for nhash, nrank in minimo:
 				if nrank not in processed:
 					queue.append((nhash,nrank))
-
 				if nrank != self.__rank:
 					mas_cercanos[nhash] = nrank
 

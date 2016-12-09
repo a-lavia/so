@@ -1,0 +1,31 @@
+Comments
+
+find_nodes:
+# BFS / DFS
+# tengo que buscar uno de la red
+# Varios nodos pueden tener el mismo archivo y devuelven los que tienen esa distancia
+# hace lo mismo que find_nodes_join pero con los minimos
+# te quedas con los k mas cercanos o los k minimos
+# cuando me envian los valores los agregos a la cola
+# traigo vecinos del uno y y luego le pido los vecinos
+# me fijo si no le pregunte dos veces al mismo.
+# luego filtro los mas cercanos al hash
+# tengo que reconstruir toda la red
+# me fijo de los k mas cercanos y voy por el minimo.
+
+# NO BLOQUEANTE -> PREGUNTO A TODOS Y HAGO UN WAIT HASTA QUE ME RESPONDA
+# EL QUE NECESITO
+
+
+
+find_nodes_join:
+# Camino minimo
+# devuelve vecinos y sus archivos (file names) -> los file names sirven para ver cuales son los archivos con los que me deberia quedar son los mas cercanos
+#                                                   hay que guardarlos dentro de files
+# siempre devuelve la lista, no ok, si devuelve vacio es porque el mas cercano es el que se lo mande (fijarse si no agregarse)
+
+# pregunto al primer nodo y con sus valores  hago la cola
+# si me envian archivos los tengo que guardar y la de nodos(mas cerca de mi que el nodo al que le pregunte)
+
+# con tag store envio los archivos al nodo (en un mensaje aparte), no espero nada.
+
