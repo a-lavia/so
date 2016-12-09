@@ -2,213 +2,32 @@
 En este informe presentaremos los algoritmos realizados para la implementación de una \textbf{DHT Kademlia} simplificada, para ello utilizamos la interfaz \textbf{MPI} que nos servirá para pasar mensajes a través de los nodos que componen nuestra red.
 
 \section{Ejercicio 1}
-Para las implementaciones de \textbf{\_\_find\_nodes}, \textbf{\_\_find\_nodes\_join} \textbf{\_\_handle\_console\_store} y \textbf{\_\_handle\_console\_look\_up} preguntamos a los nodos mínimos por el hash utilizando las funciones \textbf{MPI.COMM\_WORLD.send()} y recibimos la respuesta con \textbf{MPI.COMM\_WORLD.recv()} estas funciones de MPI son bloqueantes, las implementaciones son las siguientes.
+Para las implementaciones de \emph{\_\_find\_nodes}, \emph{\_\_find\_nodes\_join} \emph{\_\_handle\_console\_store} y \emph{\_\_handle\_console\_look\_up} preguntamos a los nodos mínimos por el hash utilizando las funciones \textbf{MPI.COMM\_WORLD.send()} y recibimos la respuesta con \textbf{MPI.COMM\_WORLD.recv()}. Estas funciones de MPI son bloqueantes, las implementaciones son las siguientes.
 
-\subsection{\_\_find\_nodes}
+\subsection{Función \_\_find\_nodes}
+La función \emph{\_\_find\_nodes} funciona de la siguiente forma: como tiene que buscar los nodos más cercanos al hash que me pasan como parametro, buscamos los más cercanos. Les enviamos un mensaje de forma bloqueante con la función \textbf{MPI.COMM\_WORLD.send()} a los nodos más cercanos al hash del nodo contacto y estos a su vez realizan lo mismo con sus nodos más cercanos hasta haber procesado todos los nodos y cada uno devuelve sus nodos más cercanos al hash. Luego de enviar cada mensaje, esperamos de forma bloqueante su respuesta con \textbf{MPI.COMM\_WORLD.recv()}, esto le da un orden al recorrido del filesystem distrubuído.
 
-\begin{lstlisting}
-def __find_nodes(self, contact_nodes, thing_hash):
-
-    queue = contact_nodes
-    processed = set()
-    nodes_min = {}
-
-    nodes_min[self.__hash] = self.__rank
-
-    processed.add(self.__rank)
-
-    while len(queue) > 0:
-        node_hash, node_rank = queue.pop()
-        if node_rank not in processed:
-            processed.add(node_rank)
-
-            self.__comm.send(thing_hash, dest=node_rank
-					, tag=TAG_NODE_FIND_NODES_REQ)
-
-            res = self.__comm.recv(source=node_rank
-						, tag=TAG_NODE_FIND_NODES_RESP)
-
-            queue.extend(res)
-            
-            for (nhash, nrank) in res:
-                nodes_min[nhash] = nrank
-
-    return nodes_min
-\end{lstlisting}
+Una vez que se procesaron todos los nodos y obtuvimos los más cercanos al hash los devuelvemos.
 
 
-\subsection{\_\_find\_nodes\_join}
-Para la implementación de \textbf{\_\_find\_nodes\_join} 
+\subsection{Función \_\_find\_nodes\_join}
+La función \emph{\_\_find\_nodes\_join} funciona de una forma similar a \emph{\_\_find\_nodes} con la diferencia que en vez de buscar los nodos más cercanos de un hash que me pasan como parametro, busco los más cercanos al nodo que esta haciendo el join. Las funciones \textbf{MPI.COMM\_WORLD.send()} y \textbf{MPI.COMM\_WORLD.recv()} las utilizamos de la misma manera, pero \textbf{MPI.COMM\_WORLD.recv()} no devuelve sólo los hash y rank de cada nodo cercano sino también sus archivos que el nodo que hace el join debe agregar a su base porque son migrados de los nodos más cercanos hacia él y porque este es el nuevo más cercano a esos archivos.
 
-\begin{lstlisting}
-def __find_nodes_join(self, contact_nodes):
-    nodes_min = set()
-
-    processed = set()
-    queue = contact_nodes
-    mas_cercanos = {}
-
-    processed.add(self.__rank)
-
-    while len(queue) > 0:
-        nhash, nrank = queue.pop()                                 
-        if nrank not in processed:
-            processed.add(nrank)
-
-            self.__comm.send((self.__hash,self.__rank)
-				, dest=nrank, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
-            
-            res = self.__comm.recv(source=nrank
-				, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
-
-            queue.extend(res[0])
-            for fhash, fpath in res[1].items():
-                self.__files[fhash] = fpath
-
-            for node_hash, node_rank in res[0]:
-                if node_rank != self.__rank:
-                    mas_cercanos[node_hash] = node_rank
+\subsection{Función \_\_handle\_console\_store}
+El procedimiento de ésta función es muy simple. Como lo que tiene que hacer es guardar un archivo en la red, se realiza lo siguiente: guardamos el archivo en el nodo (rank) que se pasa como parametro. Luego, obtenemos sus mínimos locales del nodo al hash del archivo y con estos llamamos a la funcion \emph{\_\_find\_nodes} para obtener todos los nodos mas cercanos al hash del archivo. Con los nodos mas cercanos obtenemos los de menor distancia al hash del archivo con la función \emph{\_\_get\_mins}. Por último, enviamos el archivo a todos estos nodos de forma bloqueante, con la función \textbf{MPI.COMM\_WORLD.send()} para que ellos también lo guarden.
 
 
-    for n in mas_cercanos.items():
-        nodes_min.add(n)
+\subsection{Función \_\_handle\_console\_look\_up}
+Esta función debe buscar un archivo en la red. Lo que hacemos es lo siguiente: obtenemos los mínimos locales del nodo (rank) que se pasa como parámetro al hash del archivo. Con éstos llamamos a la función \emph{\_\_find\_nodes} para obtener los nodos más cercanos al hash del archivo. Luego, lo que hacemos en enviarles a los nodos más cercanos el hash del archivo preguntandoles si lo tienen por la función bloqueante \textbf{MPI.COMM\_WORLD.send()} y esperamos la respuesta también de forma bloqueante por \textbf{MPI.COMM\_WORLD.recv()}. Si lo tienen envian los datos, sino devuelven false. En el caso de que se encuentre el nodo que que está realizando el look up dentro de los más cercanos, no se le envía un mensaje sino que se busca si está el archivo en él directamente.
 
-    return nodes_min
-\end{lstlisting}
-
-
-\subsection{\_\_handle\_console\_store}
-
-\begin{lstlisting}
-def __handle_console_store(self, data):
-
-    file_hash, file_name = data
-
-    print("[D] [{:02d}] [CONSOLE|STORE] Almacenando archivo '{}' con hash '{}'".format(self.__rank, file_name, file_hash))
-
-    nodes_min_local = self.__get_local_mins(file_hash)
-
-    print("[D] [{:02d}] [CONSOLE|STORE] Buscando nodo más cercano para almacenando archivo '{}' con hash '{}'".format(self.__rank, file_name, file_hash))
-
-    nodes_min = self.__find_nodes(nodes_min_local, file_hash)
-
-    nodes_min = self.__get_mins(nodes_min, file_hash)
-
-    for min_hash, min_rank in nodes_min:
-        if self.__rank == min_rank:
-            self.__handle_node_store_req(data)
-        else:
-            self.__comm.send(data, dest=min_rank, tag=TAG_NODE_STORE_REQ)
-
-\end{lstlisting}
-
-
-\subsection{\_\_handle\_console\_look\_up}
-
-\begin{lstlisting}
-def __handle_console_look_up(self, source, data):
-
-    file_hash = data
-
-    print("[D] [{:02d}] [CONSOLE|LOOK-UP] Buscando archivo con hash '{}'".format(self.__rank, file_hash))
-
-    nodes_min_local = self.__get_local_mins(file_hash)
-
-    nodes_min = self.__find_nodes(nodes_min_local, file_hash)
-
-    res = False
-    for min_hash, min_rank in nodes_min.items():
-        if not res and min_rank != self.__rank:
-            self.__comm.send(file_hash, dest=min_rank, tag=TAG_NODE_LOOKUP_REQ)
-            res = self.__comm.recv(source=min_rank, tag=TAG_NODE_LOOKUP_RESP)
-        
-        elif min_rank == self.__rank and file_hash in self.__files:
-            res = self.__files[file_hash]
-
-
-    self.__comm.send(res, dest=source, tag=TAG_CONSOLE_LOOKUP_RESP)
-\end{lstlisting}
+Por último, se envia de forma bloqueante al nodo consola si está el archivo o no.
 
 \section{Ejercicio 3}
-Para la implementación no bloqueante de \textbf{\_\_find\_nodes} y  \textbf{\_\_find\_nodes\_join} reemplazamos las funciones \\ \textbf{MPI.COMM\_WORLD.send()} y \textbf{MPI.COMM\_WORLD.recv()} por la versión no bloqueante de las mismas, estas son \textbf{MPI.COMM\_WORLD.isend()} y \textbf{MPI.COMM\_WORLD.irecv()} esta retornan de inmediato sin bloquearse y luego hacemos uso la función \textbf{MPI.COMM\_WORLD.wait()} que si espera de manera bloqueante el mensaje. Primero enviamos todos los mensajes y luego mediante la función \textbf{MPI.COMM\_WORLD.iprobe()} que indica si hay o no mensajes de manera no bloqueante los vamos recibiendo.
+Para la implementación no bloqueante de \emph{\_\_find\_nodes} y  \emph{\_\_find\_nodes\_join} reemplazamos la funcion \\ \textbf{MPI.COMM\_WORLD.send()} por la versión no bloqueante de la misma \textbf{MPI.COMM\_WORLD.isend()}, donde esta retorna de inmediato sin bloquearse. Lo que primero realizamos es enviar todos los mensajes y luego esperamos de forma bloqueante con la función \textbf{MPI.COMM\_WORLD.recv()} a que vayan llegando las respuestas.
 
-\subsection{\_\_find\_nodes}
-\begin{lstlisting}
-def __find_nodes(self, contact_nodes, thing_hash):
+\subsection{Función \_\_find\_nodes}
+Esta función tiene un comportamiento similar a la del ejercicio anterior salvo por los siguientes cambios: en vez de ir enviando pedidos de forma bloqueante a cada nodo para obtener los más cercanos al hash, envío los pedidos a todos los nodos que tengo encolados de forma no bloqueante con la función \textbf{MPI.COMM\_WORLD.isend()}. Una vez que se vació la cola, esperamos de forma bloqueante las respuestas del primero que me responda, no de algún nodo en particular. Una vez que responde alguno el procedimiento es el mismo, se van encolando los nodos más cercanos que envían como respuesta y nuevamente se les envía los pedidos a todos de forma no bloqueante. Para saber si obtuvimos todas las respuestas llevamos un contador que aumenta cada vez que se realiza un pedido y disminuye cada vez que se recibe alguna respuesta. Por último, una vez que se procesaron todos los nodos y obtuve los más cercanos los devolvemos.
 
-    queue = contact_nodes
-    processed = set()
-    nodes_min = {}
-
-    nodes_min[self.__hash] = self.__rank
-
-    processed.add(self.__rank)
-
-    while len(queue) > 0:
-        node_hash, node_rank = queue.pop()
-        if node_rank not in processed:
-            processed.add(node_rank)
-
-            req = self.__comm.isend(thing_hash, dest=node_rank
-					, tag=TAG_NODE_FIND_NODES_REQ)
-
-            res = req.wait()
-
-    while self.__comm.iprobe() > 0:
-        req = self.__comm.irecv(source=MPI.ANY_SOURCE
-				, tag=TAG_NODE_FIND_NODES_RESP)
-
-        res = req.wait()
-        queue.extend(res)
-
-        for (nhash, nrank) in res:
-            nodes_min[nhash] = nrank
-
-
-    return nodes_min
-\end{lstlisting}
-
-\subsection{\_\_find\_nodes\_join}
-\begin{lstlisting}
-def __find_nodes_join(self, contact_nodes):
-
-    nodes_min = set()
-    processed = set()
-    queue = contact_nodes
-    mas_cercanos = {}
-
-    processed.add(self.__rank)
-                
-    while len(queue) > 0:
-        node_hash, node_rank = queue.pop()                                 
-        if node_rank not in processed:
-            processed.add(node_rank)
-            req = self.__comm.isend((self.__hash,self.__rank), dest=node_rank
-				, tag=TAG_NODE_FIND_NODES_JOIN_REQ)
-
-            req.wait()
-
-    while self.__comm.iprobe() > 0:
-
-        req = self.__comm.irecv(source=MPI.ANY_SOURCE
-			, tag=TAG_NODE_FIND_NODES_JOIN_RESP)
-
-        res =  req.wait()
-        minimo = res[0]
-        files = res[1]
-
-        queue.extend(minimo)
-
-        for fhash, fpath in res[1].items():
-            self.__files[fhash] = fpath
-
-        for nhash, nrank in res[0]:
-            if nrank != self.__rank:
-                mas_cercanos[nhash] = nrank
-
-    for n in mas_cercanos.items():
-        nodes_min.add(n)
-
-    return nodes_min
-\end{lstlisting}
+\subsection{Función \_\_find\_nodes\_join}
+Esta función tiene los mismos cambios que la anterior.
 
