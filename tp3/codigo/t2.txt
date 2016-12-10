@@ -11,9 +11,15 @@ j 4
 
 s 4 f4
 
+l 1 f1
+l 2 f2
+
 j 5
 j 6
 j 7
+
+l 3 f3
+l 4 f4
 
 s 5 f5
 s 6 f6
@@ -22,16 +28,13 @@ s 7 f7
 j 8
 j 9
 
-s 8 f8
-s 9 f9
-
-l 1 f1
-l 2 f2
-l 3 f3
-l 4 f4
 l 5 f5
 l 6 f6
 l 7 f7
+
+s 8 f8
+s 9 f9
+
 l 8 f8
 l 9 f9
 

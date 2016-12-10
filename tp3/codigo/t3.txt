@@ -18,14 +18,14 @@ s 7 f7
 s 2 f2
 s 6 f6
 
-l 1 f1
-l 2 f2
-l 3 f3
 l 4 f4
-l 5 f5
-l 6 f6
-l 7 f7
 l 8 f8
+l 2 f2
+l 1 f1
 l 9 f9
+l 5 f5
+l 7 f7
+l 3 f3
+l 6 f6
 
 q

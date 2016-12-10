@@ -5,9 +5,9 @@ En este informe presentaremos los algoritmos realizados para la implementación 
 Para las implementaciones de \emph{\_\_find\_nodes}, \emph{\_\_find\_nodes\_join} \emph{\_\_handle\_console\_store} y \emph{\_\_handle\_console\_look\_up} preguntamos a los nodos mínimos por el hash utilizando las funciones \textbf{MPI.COMM\_WORLD.send()} y recibimos la respuesta con \textbf{MPI.COMM\_WORLD.recv()}. Estas funciones de MPI son bloqueantes, las implementaciones son las siguientes.
 
 \subsection{Función \_\_find\_nodes}
-La función \emph{\_\_find\_nodes} funciona de la siguiente forma: como tiene que buscar los nodos más cercanos al hash que me pasan como parametro, buscamos los más cercanos. Les enviamos un mensaje de forma bloqueante con la función \textbf{MPI.COMM\_WORLD.send()} a los nodos más cercanos al hash del nodo contacto y estos a su vez realizan lo mismo con sus nodos más cercanos hasta haber procesado todos los nodos y cada uno devuelve sus nodos más cercanos al hash. Luego de enviar cada mensaje, esperamos de forma bloqueante su respuesta con \textbf{MPI.COMM\_WORLD.recv()}, esto le da un orden al recorrido del filesystem distrubuído.
+La función \emph{\_\_find\_nodes} funciona de la siguiente forma: como tiene que buscar los nodos más cercanos al hash que me pasan como parametro, buscamos los más cercanos. Les enviamos un mensaje de forma bloqueante con la función \textbf{MPI.COMM\_WORLD.send()} a los nodos más cercanos al hash del nodo contacto y estos a su vez realizan lo mismo con sus nodos más cercanos hasta haber procesado todos los nodos y cada uno devuelve sus nodos más cercanos al hash. Luego de enviar cada mensaje, esperamos de forma bloqueante su respuesta con \textbf{MPI.COMM\_WORLD.recv()}, esto le da un orden al recorrido del filesystem distribuido.
 
-Una vez que se procesaron todos los nodos y obtuvimos los más cercanos al hash los devuelvemos.
+Una vez que se procesaron todos los nodos y obtuvimos los más cercanos al hash los devolvemos.
 
 
 \subsection{Función \_\_find\_nodes\_join}
@@ -23,7 +23,7 @@ Esta función debe buscar un archivo en la red. Lo que hacemos es lo siguiente: 
 Por último, se envia de forma bloqueante al nodo consola si está el archivo o no.
 
 \section{Ejercicio 3}
-Para la implementación no bloqueante de \emph{\_\_find\_nodes} y  \emph{\_\_find\_nodes\_join} reemplazamos la funcion \\ \textbf{MPI.COMM\_WORLD.send()} por la versión no bloqueante de la misma \textbf{MPI.COMM\_WORLD.isend()}, donde esta retorna de inmediato sin bloquearse. Lo que primero realizamos es enviar todos los mensajes y luego esperamos de forma bloqueante con la función \textbf{MPI.COMM\_WORLD.recv()} a que vayan llegando las respuestas.
+Para la implementación no bloqueante de \emph{\_\_find\_nodes} y  \emph{\_\_find\_nodes\_join} reemplazamos la función \\ \textbf{MPI.COMM\_WORLD.send()} por la versión no bloqueante de la misma \textbf{MPI.COMM\_WORLD.isend()}, donde esta retorna de inmediato sin bloquearse. Lo que primero realizamos es enviar todos los mensajes y luego esperamos de forma bloqueante con la función \textbf{MPI.COMM\_WORLD.recv()} a que vayan llegando las respuestas.
 
 \subsection{Función \_\_find\_nodes}
 Esta función tiene un comportamiento similar a la del ejercicio anterior salvo por los siguientes cambios: en vez de ir enviando pedidos de forma bloqueante a cada nodo para obtener los más cercanos al hash, envío los pedidos a todos los nodos que tengo encolados de forma no bloqueante con la función \textbf{MPI.COMM\_WORLD.isend()}. Una vez que se vació la cola, esperamos de forma bloqueante las respuestas del primero que me responda, no de algún nodo en particular. Una vez que responde alguno el procedimiento es el mismo, se van encolando los nodos más cercanos que envían como respuesta y nuevamente se les envía los pedidos a todos de forma no bloqueante. Para saber si obtuvimos todas las respuestas llevamos un contador que aumenta cada vez que se realiza un pedido y disminuye cada vez que se recibe alguna respuesta. Por último, una vez que se procesaron todos los nodos y obtuve los más cercanos los devolvemos.
@@ -31,3 +31,23 @@ Esta función tiene un comportamiento similar a la del ejercicio anterior salvo 
 \subsection{Función \_\_find\_nodes\_join}
 Esta función tiene los mismos cambios que la anterior.
 
+
+\section{Ejercicios 2 y 4 - Tests}
+
+Para testear nuestras funciones generamos cuatro tipo de tests distintos:
+
+\begin{itemize}
+
+\item \textbf{Test 1}: realizamos nueve joins seguidos, luego, por cada uno de ellos hacemos un store agregando un archivo distinto y, por último, un look up con el rank y archivo de cada nodo correspondiente. Este test es para observar si las funciones implementadas pueden realizar las mínimas operaciones.
+\newline Este test fue pasado con éxito, se pudieron realizar los joins y stores, y los look up devolvieron que cada archivo fue guardado con éxito.
+
+\item \textbf{Test 2}: en este test utilizamos nueve nodos. Lo que hacemos es ir haciendo joins y entre ellos stores para ir agregando files. Luego, realizamos un look up por cada archivo. Con este test queremos observar si nuestras implementaciones funcionan en un ambiente más real donde se llaman a las funciones en cualquier orden.
+\newline Este test también fue pasado con éxito.
+
+\item \textbf{Test 3}: Este test es parecido al primero con la diferencia que los store y los look up están desordenados. Con este test queremos observar si se pueden realizar las mínimas operaciones en un orden distinto.
+\newline Este test también fue pasado con éxito.
+
+\item \textbf{Test 4}: En este test queremos probar la funcionalidad de store y find\_nodes. Como esta función no sólo guarda el archivo en el nodo que se pasa como parametro sino que también busca los nodos más cercanos al hash del archivo y los agrega a ellas, lo que hacemos es hacer un join de cuatro nodos (utilizamos un ambiente más chico para que los nodos sean todos cercanos a los archivos y obligar a que se los pueda encontrar a todos) luego agrego tres archivos al nodo con rank 1 y tres archivos al nodo con rank 2. Luego, realizo un look up a cada nodo por cada file.
+\newline Este test corrió con éxito en ambas implementaciones, se pudo observar que en cada look up devolvió que el archivo fue guardado exitosamente.
+
+\end{itemize}
